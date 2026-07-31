@@ -1,0 +1,150 @@
+name: official-tools
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Nova versão (vX.Y.Z)"
+        required: true
+        default: "v1.0.0"
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  ENGINE_VERSION: v0.2.4-0.20260731203802-a61cafc5f910
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: fmt
+        run: test -z "$(gofmt -l -s .)"
+      - name: vet
+        run: go vet ./...
+      - name: test
+        run: go test ./...
+      - name: race
+        run: go test -race ./...
+      - name: valida manifest sem executar a tool
+        run: go run github.com/mateuslh/lealing/cmd/lealing@${ENGINE_VERSION} -tool-validate manifests/token-usage.yaml
+      - name: conformidade screen-v1
+        run: go test ./cmd/token-usage -run TestConformidadeScreenV1 -count=1
+      - name: proíbe imports internos da engine
+        run: test -z "$(grep -R 'github.com/mateuslh/lealing/internal' --include='*.go' . || true)"
+
+  build:
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: darwin
+            goarch: amd64
+            format: tar
+          - goos: darwin
+            goarch: arm64
+            format: tar
+          - goos: windows
+            goarch: amd64
+            format: zip
+          - goos: windows
+            goarch: arm64
+            format: zip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: compila e empacota
+        shell: bash
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          PACKAGE_FORMAT: ${{ matrix.format }}
+          RELEASE_VERSION: ${{ inputs.version || 'v1.0.0' }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "versão inválida: $RELEASE_VERSION" >&2
+            exit 1
+          fi
+          tool_version="${RELEASE_VERSION#v}"
+          target="token-usage_${GOOS}_${GOARCH}"
+          stage="dist/${target}"
+          mkdir -p "$stage"
+          suffix=""
+          if [[ "$GOOS" == windows ]]; then suffix=.exe; fi
+          CGO_ENABLED=0 go build -trimpath \
+            -ldflags="-s -w -X main.version=${tool_version}" \
+            -o "$stage/lealing-tool-token-usage${suffix}" ./cmd/token-usage
+          go run ./cmd/release-metadata -manifest manifests/token-usage.yaml \
+            -manifest-output "$stage/manifest.yaml" -version "$tool_version"
+          if [[ "$PACKAGE_FORMAT" == zip ]]; then
+            (cd "$stage" && zip -q "../${target}.zip" ./*)
+          else
+            tar -C "$stage" -czf "dist/${target}.tar.gz" .
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: token-usage-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/token-usage_${{ matrix.goos }}_${{ matrix.goarch }}.*
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: token-usage-*
+          path: dist
+          merge-multiple: true
+      - name: gera manifest, checksums e índice
+        env:
+          RELEASE_VERSION: ${{ inputs.version || 'v1.0.0' }}
+        run: |
+          tool_version="${RELEASE_VERSION#v}"
+          go run ./cmd/release-metadata -dir dist -manifest manifests/token-usage.yaml \
+            -version "$tool_version" -repository "$GITHUB_REPOSITORY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: official-tools-${{ inputs.version || 'snapshot' }}
+          path: dist
+          if-no-files-found: error
+      - name: cria tag anotada e publica a release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          git fetch --tags
+          if git rev-parse -q --verify "refs/tags/${RELEASE_VERSION}" >/dev/null; then
+            echo "a tag ${RELEASE_VERSION} já existe e não será alterada" >&2
+            exit 1
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git tag -a "$RELEASE_VERSION" "$GITHUB_SHA" -m "lealing-tools ${RELEASE_VERSION}"
+          git push origin "$RELEASE_VERSION"
+          gh release create "$RELEASE_VERSION" dist/* \
+            --verify-tag --title "lealing-tools ${RELEASE_VERSION}" --generate-notes
