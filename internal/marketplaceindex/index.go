@@ -268,27 +268,40 @@ func validSHA256(value string) bool {
 }
 
 func validSemver(value string) bool {
-	if !validVersion.MatchString(strings.TrimPrefix(value, "v")) {
-		return false
-	}
 	_, ok := parseVersion(value)
 	return ok
 }
 
-func parseVersion(value string) ([3]int, bool) {
+type semanticVersion struct {
+	core       [3]int
+	prerelease []string
+}
+
+func parseVersion(value string) (semanticVersion, bool) {
 	value = strings.TrimPrefix(value, "v")
-	core, _, _ := strings.Cut(value, "-")
+	if !validVersion.MatchString(value) {
+		return semanticVersion{}, false
+	}
+	core, prerelease, hasPrerelease := strings.Cut(value, "-")
 	parts := strings.Split(core, ".")
 	if len(parts) != 3 {
-		return [3]int{}, false
+		return semanticVersion{}, false
 	}
-	var result [3]int
+	var result semanticVersion
 	for index, part := range parts {
 		number, err := strconv.Atoi(part)
 		if err != nil || number < 0 || (len(part) > 1 && part[0] == '0') {
-			return [3]int{}, false
+			return semanticVersion{}, false
 		}
-		result[index] = number
+		result.core[index] = number
+	}
+	if hasPrerelease {
+		result.prerelease = strings.Split(prerelease, ".")
+		for _, identifier := range result.prerelease {
+			if _, err := strconv.Atoi(identifier); err == nil && len(identifier) > 1 && identifier[0] == '0' {
+				return semanticVersion{}, false
+			}
+		}
 	}
 	return result, true
 }
@@ -299,12 +312,33 @@ func versionLess(left, right string) bool {
 	if !aOK || !bOK {
 		return left < right
 	}
-	for index := range a {
-		if a[index] != b[index] {
-			return a[index] < b[index]
+	for index := range a.core {
+		if a.core[index] != b.core[index] {
+			return a.core[index] < b.core[index]
 		}
 	}
-	return false
+	if len(a.prerelease) == 0 || len(b.prerelease) == 0 {
+		return len(a.prerelease) > 0 && len(b.prerelease) == 0
+	}
+	for index := 0; index < min(len(a.prerelease), len(b.prerelease)); index++ {
+		left, right := a.prerelease[index], b.prerelease[index]
+		if left == right {
+			continue
+		}
+		leftNumber, leftErr := strconv.Atoi(left)
+		rightNumber, rightErr := strconv.Atoi(right)
+		switch {
+		case leftErr == nil && rightErr == nil:
+			return leftNumber < rightNumber
+		case leftErr == nil:
+			return true
+		case rightErr == nil:
+			return false
+		default:
+			return left < right
+		}
+	}
+	return len(a.prerelease) < len(b.prerelease)
 }
 
 func contains(values []string, target string) bool {

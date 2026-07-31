@@ -80,6 +80,16 @@ func TestEntradaRejeitaChecksumEPermissaoInvalidos(t *testing.T) {
 	}
 }
 
+func TestSemVerRejeitaZeroInicialEOrdenaReleaseDepoisDeRC(t *testing.T) {
+	entry := validEntry("demo", "1.0.0-01")
+	if err := entry.Validate(Publishers{}); err == nil || !strings.Contains(err.Error(), "versão") {
+		t.Fatalf("versão = %v", err)
+	}
+	if !versionLess("1.0.0-rc.2", "1.0.0") || versionLess("1.0.0", "1.0.0-rc.2") {
+		t.Fatal("ordem SemVer entre pre-release e release estável está incorreta")
+	}
+}
+
 func setup(t *testing.T) (root, entries, publishers string) {
 	t.Helper()
 	root = t.TempDir()
