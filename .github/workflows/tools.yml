@@ -22,8 +22,8 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -62,16 +62,16 @@ jobs:
             goarch: arm64
             format: zip
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
       - name: compila e empacota
         shell: bash
         env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
+          TARGET_GOOS: ${{ matrix.goos }}
+          TARGET_GOARCH: ${{ matrix.goarch }}
           PACKAGE_FORMAT: ${{ matrix.format }}
           RELEASE_VERSION: ${{ inputs.version || 'v1.0.0' }}
         run: |
@@ -81,12 +81,12 @@ jobs:
             exit 1
           fi
           tool_version="${RELEASE_VERSION#v}"
-          target="token-usage_${GOOS}_${GOARCH}"
+          target="token-usage_${TARGET_GOOS}_${TARGET_GOARCH}"
           stage="dist/${target}"
           mkdir -p "$stage"
           suffix=""
-          if [[ "$GOOS" == windows ]]; then suffix=.exe; fi
-          CGO_ENABLED=0 go build -trimpath \
+          if [[ "$TARGET_GOOS" == windows ]]; then suffix=.exe; fi
+          GOOS="$TARGET_GOOS" GOARCH="$TARGET_GOARCH" CGO_ENABLED=0 go build -trimpath \
             -ldflags="-s -w -X main.version=${tool_version}" \
             -o "$stage/lealing-tool-token-usage${suffix}" ./cmd/token-usage
           go run ./cmd/release-metadata -manifest manifests/token-usage.yaml \
@@ -96,7 +96,7 @@ jobs:
           else
             tar -C "$stage" -czf "dist/${target}.tar.gz" .
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: token-usage-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/token-usage_${{ matrix.goos }}_${{ matrix.goarch }}.*
@@ -108,12 +108,12 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: token-usage-*
           path: dist
@@ -125,7 +125,7 @@ jobs:
           tool_version="${RELEASE_VERSION#v}"
           go run ./cmd/release-metadata -dir dist -manifest manifests/token-usage.yaml \
             -version "$tool_version" -repository "$GITHUB_REPOSITORY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: official-tools-${{ inputs.version || 'snapshot' }}
           path: dist
