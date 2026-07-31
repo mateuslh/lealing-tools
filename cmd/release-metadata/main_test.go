@@ -44,7 +44,7 @@ func TestGeneratePublicaManifestChecksumsEIndice(t *testing.T) {
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatal(err)
 	}
-	if len(got.Tools) != 1 || len(got.Tools[0].Artifacts) != 4 || got.Tools[0].Version != "1.2.3" {
+	if len(got.Tools) != 1 || len(got.Tools[0].Artifacts) != 4 || got.Tools[0].Version != "1.2.3" || got.Tools[0].Name == "" || len(got.Tools[0].Permissions.Filesystem.Read) != 4 {
 		t.Fatalf("index = %+v", got)
 	}
 }

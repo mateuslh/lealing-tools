@@ -25,12 +25,28 @@ type artifact struct {
 type entry struct {
 	ID            string         `json:"id"`
 	Version       string         `json:"version"`
+	Name          string         `json:"name"`
+	Summary       string         `json:"summary"`
+	Detail        string         `json:"detail,omitempty"`
+	Category      string         `json:"category"`
+	Risk          string         `json:"risk"`
+	Glyph         string         `json:"glyph,omitempty"`
+	Permissions   permissions    `json:"permissions"`
 	Publisher     string         `json:"publisher"`
 	ManifestURL   string         `json:"manifestUrl"`
 	Artifacts     []artifact     `json:"artifacts"`
 	Protocol      map[string]int `json:"protocol"`
 	MinimumEngine string         `json:"minimumEngine"`
 	Channel       string         `json:"channel"`
+}
+
+type permissions struct {
+	Filesystem struct {
+		Read  []string `json:"read"`
+		Write []string `json:"write"`
+	} `json:"filesystem"`
+	Network    bool `json:"network"`
+	Subprocess bool `json:"subprocess"`
 }
 
 type index struct {
@@ -108,10 +124,18 @@ func generate(manifestPath, manifestOutput, directory, version, repository strin
 	if err := os.WriteFile(filepath.Join(directory, "manifest.yaml"), manifest, 0o644); err != nil {
 		return err
 	}
+	toolPermissions := permissions{Network: true, Subprocess: true}
+	toolPermissions.Filesystem.Read = []string{
+		"~/.claude/projects", "~/.claude/.credentials.json", "~/.codex/sessions", "~/.codex/auth.json",
+	}
+	toolPermissions.Filesystem.Write = []string{}
 	data, err := json.MarshalIndent(index{
 		APIVersion: "lealing.dev/marketplace/v1",
 		Tools: []entry{{
-			ID: "token-usage", Version: version, Publisher: "mateuslh",
+			ID: "token-usage", Version: version, Name: "Uso de Tokens",
+			Summary:  "Consumo de tokens e custo estimado, somando todas as sessões, por modelo, dia e projeto.",
+			Detail:   "Varre os logs do Claude Code e do Codex, normaliza o consumo relatado por cada CLI, consulta cotas quando há credenciais e estima o custo pela tabela de preços.",
+			Category: "ai", Risk: "safe", Glyph: "◔", Permissions: toolPermissions, Publisher: "mateuslh",
 			ManifestURL: baseURL + "/manifest.yaml", Artifacts: artifacts,
 			Protocol: map[string]int{"min": 1, "max": 1}, MinimumEngine: "0.3.0", Channel: "official",
 		}},

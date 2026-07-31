@@ -1,0 +1,58 @@
+{
+  "apiVersion": "lealing.dev/marketplace/v1",
+  "tools": [
+    {
+      "id": "token-usage",
+      "version": "1.0.0",
+      "name": "Uso de Tokens",
+      "summary": "Consumo de tokens e custo estimado, somando todas as sessões, por modelo, dia e projeto.",
+      "detail": "Varre os logs do Claude Code e do Codex, normaliza o consumo relatado por cada CLI, consulta cotas quando há credenciais e estima o custo pela tabela de preços.",
+      "category": "ai",
+      "risk": "safe",
+      "glyph": "◔",
+      "permissions": {
+        "filesystem": {
+          "read": [
+            "~/.claude/projects",
+            "~/.claude/.credentials.json",
+            "~/.codex/sessions",
+            "~/.codex/auth.json"
+          ],
+          "write": []
+        },
+        "network": true,
+        "subprocess": true
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.0.0/manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.0.0/token-usage_darwin_amd64.tar.gz",
+          "sha256": "b9b0de982bc0375ba996225ad6849fe231cd576a108020f7dd8aa4398d8fc546"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.0.0/token-usage_darwin_arm64.tar.gz",
+          "sha256": "9a157783d442afbb042c193c92ed4e48442f5215d9f5939d289458034b7443fd"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.0.0/token-usage_windows_amd64.zip",
+          "sha256": "21d16e0f32fc72869e0e5a228e17f8d7dca303bc858dcebf633f5b13dfddbf12"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.0.0/token-usage_windows_arm64.zip",
+          "sha256": "ddd677d9bc2ed6f3038035c1321e7876ad08ae35250b7b532cf4b89603df1901"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.0",
+      "channel": "official"
+    }
+  ]
+}

@@ -39,6 +39,8 @@ jobs:
         run: go run github.com/mateuslh/lealing/cmd/lealing@${ENGINE_VERSION} -tool-validate manifests/token-usage.yaml
       - name: conformidade screen-v1
         run: go test ./cmd/token-usage -run TestConformidadeScreenV1 -count=1
+      - name: valida índice público sem baixar artefatos
+        run: go run ./cmd/marketplace-index -check
       - name: proíbe imports internos da engine
         run: test -z "$(grep -R 'github.com/mateuslh/lealing/internal' --include='*.go' . || true)"
 

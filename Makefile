@@ -3,7 +3,7 @@ VERSION ?= 1.0.0
 ENGINE_VERSION ?= v0.2.4-0.20260731203802-a61cafc5f910
 BIN_DIR ?= bin
 
-.PHONY: fmt vet test race cross manifest build clean
+.PHONY: fmt vet test race cross manifest marketplace build clean
 
 fmt:
 	$(GO) fmt ./...
@@ -27,6 +27,9 @@ cross:
 manifest:
 	$(GO) run github.com/mateuslh/lealing/cmd/lealing@$(ENGINE_VERSION) \
 		-tool-validate manifests/token-usage.yaml
+
+marketplace:
+	$(GO) run ./cmd/marketplace-index -check
 
 build: manifest
 	@mkdir -p $(BIN_DIR)
