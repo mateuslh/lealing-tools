@@ -5,7 +5,7 @@ go 1.26.5
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/mateuslh/lealing v0.3.0
+	github.com/mateuslh/lealing v0.3.1
 )
 
 require (
