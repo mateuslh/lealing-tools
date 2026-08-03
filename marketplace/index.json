@@ -2,6 +2,492 @@
   "apiVersion": "lealing.dev/marketplace/v1",
   "tools": [
     {
+      "id": "checksum-lab",
+      "version": "1.1.0",
+      "name": "Gerador de Checksums",
+      "summary": "Gere hashes SHA-256, SHA-512 ou SHA-1 de texto sem tocar em serviços externos.",
+      "detail": "Calcula o digest do texto exatamente como digitado e sinaliza o uso legado de SHA-1.",
+      "category": "dev",
+      "risk": "safe",
+      "glyph": "#",
+      "permissions": {
+        "filesystem": {
+          "read": [],
+          "write": []
+        },
+        "network": false,
+        "subprocess": false
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/checksum-lab_manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/checksum-lab_darwin_amd64.tar.gz",
+          "sha256": "2cf603d918241f6dbd05cfe80088a34a506fce62afa065da748000dc3fced0dd"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/checksum-lab_darwin_arm64.tar.gz",
+          "sha256": "2eee2b47faa40397925dbe743d6d008ee5cc1f0bb30a6fc237a5a0e8686dac20"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/checksum-lab_windows_amd64.zip",
+          "sha256": "adb2c9e8ac1136bc5681ece8b936ce919452de916e850d371bbe52c6b656bb47"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/checksum-lab_windows_arm64.zip",
+          "sha256": "9f9c954491ad898b9e9c44d139662ed2a6eb23dba40ef6e9728ba363e345a22a"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.1",
+      "channel": "official"
+    },
+    {
+      "id": "cidr-calculator",
+      "version": "1.1.0",
+      "name": "Calculadora CIDR",
+      "summary": "Calcule rede, faixa, broadcast e capacidade de blocos IPv4 ou IPv6.",
+      "detail": "Normaliza o bloco e calcula máscara, primeiro e último endereço e quantidade total.",
+      "category": "network",
+      "risk": "safe",
+      "glyph": "▦",
+      "permissions": {
+        "filesystem": {
+          "read": [],
+          "write": []
+        },
+        "network": false,
+        "subprocess": false
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/cidr-calculator_manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/cidr-calculator_darwin_amd64.tar.gz",
+          "sha256": "5d73733a07ea9aaf0db9192e1aa82194c4e3218402e852e11ecf4f4ff684d57f"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/cidr-calculator_darwin_arm64.tar.gz",
+          "sha256": "39ca3fa99542d3b43a617ebd4ba1ff68d96803c247692ab040b3b23b4f927a96"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/cidr-calculator_windows_amd64.zip",
+          "sha256": "bb861ea99ec3f108ca51d4f9d7cc4b43291552cdd862c08f9d7cebf43e56c477"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/cidr-calculator_windows_arm64.zip",
+          "sha256": "9e3220e06fc3f7a34f5c78dae4ec1a5cbfccb496764fdff72d75cae3b7152cb2"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.1",
+      "channel": "official"
+    },
+    {
+      "id": "claude-accounts",
+      "version": "1.1.0",
+      "name": "Contas do Claude Code",
+      "summary": "Guarde sessões de várias contas do Claude Code e alterne explicitamente entre elas.",
+      "detail": "Mantém o índice no diretório privado da tool e troca o par de credencial e identidade usado pela CLI do Claude Code.",
+      "category": "ai",
+      "risk": "caution",
+      "glyph": "⇆",
+      "permissions": {
+        "filesystem": {
+          "read": [
+            "~/.claude/.credentials.json",
+            "~/.claude.json"
+          ],
+          "write": [
+            "~/.claude/.credentials.json",
+            "~/.claude.json"
+          ]
+        },
+        "network": false,
+        "subprocess": true
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/claude-accounts_manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/claude-accounts_darwin_amd64.tar.gz",
+          "sha256": "d9e683663c87e2bc9c3cddaff6f116d6993149c044383e951fb461e0390dab11"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/claude-accounts_darwin_arm64.tar.gz",
+          "sha256": "0b463afe8c45367b074bf34b9efd762092597de2c95f502681ddd4d0f5159eb3"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/claude-accounts_windows_amd64.zip",
+          "sha256": "7339fa11fc6fbfde87ed1af636dd23dc19ace44af52798aa932a04cb03a9a2c6"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/claude-accounts_windows_arm64.zip",
+          "sha256": "adbe46b5798a3548d199c9ab20846f703d9898f1497a5ea1cb8cc2079a30289a"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.1",
+      "channel": "official"
+    },
+    {
+      "id": "codec-lab",
+      "version": "1.1.0",
+      "name": "Codecs Base64 e URL",
+      "summary": "Codifique e decodifique Base64, Base64URL e componentes de URL.",
+      "detail": "Transforma texto localmente sem executar nem interpretar a saída como comando.",
+      "category": "dev",
+      "risk": "safe",
+      "glyph": "⇄",
+      "permissions": {
+        "filesystem": {
+          "read": [],
+          "write": []
+        },
+        "network": false,
+        "subprocess": false
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/codec-lab_manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/codec-lab_darwin_amd64.tar.gz",
+          "sha256": "3a3b7cffdd6de621656d54566eabddaaeba5db65a12ce3c8945750cd279fb7c5"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/codec-lab_darwin_arm64.tar.gz",
+          "sha256": "d1272972c41c75943e07f4c0e61e5937412850fa20e7f02b0d96d345cceff4cd"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/codec-lab_windows_amd64.zip",
+          "sha256": "c33f8e9aa63f8b110c0f5d02183715fd3a381a18ddd681336a8fc245015a517d"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/codec-lab_windows_arm64.zip",
+          "sha256": "b92bbb2068aaf82f63cffb06eef190867e9a9891ab5a1dca073bce297c51dc95"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.1",
+      "channel": "official"
+    },
+    {
+      "id": "http-probe",
+      "version": "1.1.0",
+      "name": "Sonda HTTP",
+      "summary": "Inspecione status, latência, headers e uma prévia segura de uma URL.",
+      "detail": "Executa GET ou HEAD com timeout, limite de corpo e redirecionamentos controlados.",
+      "category": "network",
+      "risk": "safe",
+      "glyph": "↗",
+      "permissions": {
+        "filesystem": {
+          "read": [],
+          "write": []
+        },
+        "network": true,
+        "subprocess": false
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/http-probe_manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/http-probe_darwin_amd64.tar.gz",
+          "sha256": "501096ed47407aa1457e5c5f5ee9c7240750b19e41e86bfc83f77a2a715a32d7"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/http-probe_darwin_arm64.tar.gz",
+          "sha256": "f86703787cf7849a16f4da8a731d14d8a1de37dbdf3faa6668472b53936d7d41"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/http-probe_windows_amd64.zip",
+          "sha256": "536e0ac14f330e6606d68117111368573ca299fa376486035a950b2a7da1a70d"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/http-probe_windows_arm64.zip",
+          "sha256": "401b872d5af91b6506367f25747e10a5a65d2a367d94f8bcfb0160d041983b5f"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.1",
+      "channel": "official"
+    },
+    {
+      "id": "json-lab",
+      "version": "1.1.0",
+      "name": "Laboratório JSON",
+      "summary": "Valide, formate ou compacte JSON com diagnóstico preciso de sintaxe.",
+      "detail": "Processa o conteúdo localmente e preserva números sem convertê-los para ponto flutuante.",
+      "category": "dev",
+      "risk": "safe",
+      "glyph": "{",
+      "permissions": {
+        "filesystem": {
+          "read": [],
+          "write": []
+        },
+        "network": false,
+        "subprocess": false
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/json-lab_manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/json-lab_darwin_amd64.tar.gz",
+          "sha256": "a7c4ddef330bee16da04513f8c8da297f8b2c4e3d8723183807ec2dc55d7bc9c"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/json-lab_darwin_arm64.tar.gz",
+          "sha256": "a8c7ab7c2967ea14996c050cfd21cb290e33cf6b8f4ab28fffd7d8e4f7692a2e"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/json-lab_windows_amd64.zip",
+          "sha256": "5c73f49bfaf99aeaccdb22620d805e9c6bb48b9d052c49d6e21a32fc5cd857b4"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/json-lab_windows_arm64.zip",
+          "sha256": "649a43b9b75e0f0c106cc7c343436469e0140e7a55597f213f39dc48bc1444a9"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.1",
+      "channel": "official"
+    },
+    {
+      "id": "jwt-inspector",
+      "version": "1.1.0",
+      "name": "Inspetor JWT",
+      "summary": "Decodifique header, claims e validade temporal de um JWT sem enviar o token.",
+      "detail": "Decodifica Base64URL e apresenta os campos do token sem prometer verificação de assinatura.",
+      "category": "dev",
+      "risk": "safe",
+      "glyph": "◈",
+      "permissions": {
+        "filesystem": {
+          "read": [],
+          "write": []
+        },
+        "network": false,
+        "subprocess": false
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/jwt-inspector_manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/jwt-inspector_darwin_amd64.tar.gz",
+          "sha256": "a8609147e19bb4548c8ca625b99c09c76c6f260e2989b8f3831bdfc2e2bf28a6"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/jwt-inspector_darwin_arm64.tar.gz",
+          "sha256": "2f4bee84d73cbba88eae85ea66a43e5efe9869b03e6e847fe03cd06388190981"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/jwt-inspector_windows_amd64.zip",
+          "sha256": "13a9e86addd08d22485973d953396874c3bee7a96586680cdecf0baf86c21965"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/jwt-inspector_windows_arm64.zip",
+          "sha256": "832502bb8a938cf85ac961bec9b165ca417b843e8fe1de69224ba99672eaa16b"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.1",
+      "channel": "official"
+    },
+    {
+      "id": "network-inspector",
+      "version": "1.1.0",
+      "name": "Inspetor DNS e TLS",
+      "summary": "Resolva DNS ou examine validade, emissor e nomes de um certificado TLS.",
+      "detail": "Resolve endereços e nomes canônicos ou abre uma conexão somente para ler o certificado apresentado.",
+      "category": "network",
+      "risk": "safe",
+      "glyph": "◎",
+      "permissions": {
+        "filesystem": {
+          "read": [],
+          "write": []
+        },
+        "network": true,
+        "subprocess": false
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/network-inspector_manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/network-inspector_darwin_amd64.tar.gz",
+          "sha256": "e65b5ec77e7b9407bf37838fa24f92d07cf587400ca407464d6d6ce848388504"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/network-inspector_darwin_arm64.tar.gz",
+          "sha256": "049ef32ac3150f2bf9ff5a20534744ed575f37a27ae921ac67d330f20a077b0a"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/network-inspector_windows_amd64.zip",
+          "sha256": "e27f8acf2f8733a95e3c94ceec9f39d63be4a36b970f21a6311a5aef165ddef7"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/network-inspector_windows_arm64.zip",
+          "sha256": "cb7042b7b0cd85c59973bf37c0f5effd616eec9932c3bac5282c45c07b043184"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.1",
+      "channel": "official"
+    },
+    {
+      "id": "power-control",
+      "version": "1.1.0",
+      "name": "Controle de Energia",
+      "summary": "Defina quando a máquina dorme na bateria e no carregador e ajuste políticas avançadas de energia.",
+      "detail": "Usa pmset no macOS e powercfg no Windows, mostrando somente os recursos que a plataforma sabe ler e gravar.",
+      "category": "system",
+      "risk": "caution",
+      "glyph": "⏻",
+      "permissions": {
+        "filesystem": {
+          "read": [],
+          "write": []
+        },
+        "network": false,
+        "subprocess": true
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/power-control_manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/power-control_darwin_amd64.tar.gz",
+          "sha256": "f21214ec46dda14f90be388213b414540ab4f69006a4e4cccb80b3fb54413f7b"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/power-control_darwin_arm64.tar.gz",
+          "sha256": "94273d0989806f821d10fe7cd65a3905afe1e25c45efbc786631a580b0ce94f4"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/power-control_windows_amd64.zip",
+          "sha256": "fe831752b8cfc4b9942d9d6b383207c17b302ee26f300a7564e608772c6a08e8"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/power-control_windows_arm64.zip",
+          "sha256": "041b330a93aa91477a6bf74e6554309cd9aa2bd3110e2b1226de63aaab8ae28d"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.1",
+      "channel": "official"
+    },
+    {
+      "id": "system-info",
+      "version": "1.1.0",
+      "name": "Informações do Sistema",
+      "summary": "Veja versão do sistema, chip, memória, tempo ligado e estado da bateria.",
+      "detail": "Consulta informações nativas da máquina sem enviar dados para serviços externos.",
+      "category": "system",
+      "risk": "safe",
+      "glyph": "◎",
+      "permissions": {
+        "filesystem": {
+          "read": [],
+          "write": []
+        },
+        "network": false,
+        "subprocess": true
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/system-info_manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/system-info_darwin_amd64.tar.gz",
+          "sha256": "1a0c399fd21f1d84f0f673b8e9b3fea710b03b32634026fe4447f0829ccfaa15"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/system-info_darwin_arm64.tar.gz",
+          "sha256": "b87abac355a537b60a576f8c1dc26f1b9d90b02b07d682bfdfee22793348e48a"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/system-info_windows_amd64.zip",
+          "sha256": "d51a985d6cc5fc345d9ba861f195c9e1589bc3edbe0215772e42f78036e7e669"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/system-info_windows_arm64.zip",
+          "sha256": "808deb7fb04cab818d0f12762bf916d2cedaf92cf46ab32631394655b14b0f6d"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.1",
+      "channel": "official"
+    },
+    {
       "id": "token-usage",
       "version": "1.0.0",
       "name": "Uso de Tokens",
@@ -105,6 +591,107 @@
         "max": 1
       },
       "minimumEngine": "0.3.0",
+      "channel": "official"
+    },
+    {
+      "id": "token-usage",
+      "version": "1.1.0",
+      "name": "Uso de Tokens",
+      "summary": "Consumo de tokens e custo estimado, somando todas as sessões, por modelo, dia e projeto.",
+      "detail": "Varre os logs do Claude Code e do Codex, normaliza o consumo relatado por cada CLI, consulta cotas quando há credenciais e estima o custo pela tabela de preços.",
+      "category": "ai",
+      "risk": "safe",
+      "glyph": "◔",
+      "permissions": {
+        "filesystem": {
+          "read": [
+            "~/.claude/projects",
+            "~/.claude/.credentials.json",
+            "~/.codex/sessions",
+            "~/.codex/auth.json"
+          ],
+          "write": []
+        },
+        "network": true,
+        "subprocess": true
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/token-usage_manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/token-usage_darwin_amd64.tar.gz",
+          "sha256": "b24a27986c584d79b09d8840bd00246eab2b94869cb168407c001e56488f29b8"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/token-usage_darwin_arm64.tar.gz",
+          "sha256": "3266fd7587d04c112b5caeae56bc4e9ccff37b21cd155390a2c72e1e6f78248a"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/token-usage_windows_amd64.zip",
+          "sha256": "57f6782b810e7a239796e0a084c1c52a1078776446e1478ec2ed239168c6beb4"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/token-usage_windows_arm64.zip",
+          "sha256": "024fa7a4512f472a9af0f2c1e31146e1267fb921019937f574dd95ccd5af0881"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.1",
+      "channel": "official"
+    },
+    {
+      "id": "uuid-generator",
+      "version": "1.1.0",
+      "name": "Gerador de UUID",
+      "summary": "Gere lotes de UUID v4 criptograficamente aleatórios ou UUID v7 ordenáveis.",
+      "detail": "Usa crypto/rand e oferece UUID v4 aleatório ou UUID v7 ordenável por timestamp.",
+      "category": "dev",
+      "risk": "safe",
+      "glyph": "✣",
+      "permissions": {
+        "filesystem": {
+          "read": [],
+          "write": []
+        },
+        "network": false,
+        "subprocess": false
+      },
+      "publisher": "mateuslh",
+      "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/uuid-generator_manifest.yaml",
+      "artifacts": [
+        {
+          "platform": "darwin-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/uuid-generator_darwin_amd64.tar.gz",
+          "sha256": "ad336fcf67fdc024874c20a5ac4c0e6a135bb4c00477547323c38c059a0d026b"
+        },
+        {
+          "platform": "darwin-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/uuid-generator_darwin_arm64.tar.gz",
+          "sha256": "27a0f1b73a96edd65753753382c837eb7a1de6f9fa9d89f3bb2debb311e220ab"
+        },
+        {
+          "platform": "windows-amd64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/uuid-generator_windows_amd64.zip",
+          "sha256": "897c7f6532e5e53116f292cc86fbcbb9bc3b80ac448c1b62004cd5aed05653d2"
+        },
+        {
+          "platform": "windows-arm64",
+          "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/uuid-generator_windows_arm64.zip",
+          "sha256": "c1aa493d15da82c3f596c2ba5f9ad1cfb2e285800b362442b669f291d44628b5"
+        }
+      ],
+      "protocol": {
+        "min": 1,
+        "max": 1
+      },
+      "minimumEngine": "0.3.1",
       "channel": "official"
     }
   ]

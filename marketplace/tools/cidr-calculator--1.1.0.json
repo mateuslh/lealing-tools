@@ -1,0 +1,48 @@
+{
+  "id": "cidr-calculator",
+  "version": "1.1.0",
+  "name": "Calculadora CIDR",
+  "summary": "Calcule rede, faixa, broadcast e capacidade de blocos IPv4 ou IPv6.",
+  "detail": "Normaliza o bloco e calcula máscara, primeiro e último endereço e quantidade total.",
+  "category": "network",
+  "risk": "safe",
+  "glyph": "▦",
+  "permissions": {
+    "filesystem": {
+      "read": [],
+      "write": []
+    },
+    "network": false,
+    "subprocess": false
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/cidr-calculator_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/cidr-calculator_darwin_amd64.tar.gz",
+      "sha256": "5d73733a07ea9aaf0db9192e1aa82194c4e3218402e852e11ecf4f4ff684d57f"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/cidr-calculator_darwin_arm64.tar.gz",
+      "sha256": "39ca3fa99542d3b43a617ebd4ba1ff68d96803c247692ab040b3b23b4f927a96"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/cidr-calculator_windows_amd64.zip",
+      "sha256": "bb861ea99ec3f108ca51d4f9d7cc4b43291552cdd862c08f9d7cebf43e56c477"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/cidr-calculator_windows_arm64.zip",
+      "sha256": "9e3220e06fc3f7a34f5c78dae4ec1a5cbfccb496764fdff72d75cae3b7152cb2"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}

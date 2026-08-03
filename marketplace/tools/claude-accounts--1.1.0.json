@@ -1,0 +1,54 @@
+{
+  "id": "claude-accounts",
+  "version": "1.1.0",
+  "name": "Contas do Claude Code",
+  "summary": "Guarde sessões de várias contas do Claude Code e alterne explicitamente entre elas.",
+  "detail": "Mantém o índice no diretório privado da tool e troca o par de credencial e identidade usado pela CLI do Claude Code.",
+  "category": "ai",
+  "risk": "caution",
+  "glyph": "⇆",
+  "permissions": {
+    "filesystem": {
+      "read": [
+        "~/.claude/.credentials.json",
+        "~/.claude.json"
+      ],
+      "write": [
+        "~/.claude/.credentials.json",
+        "~/.claude.json"
+      ]
+    },
+    "network": false,
+    "subprocess": true
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/claude-accounts_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/claude-accounts_darwin_amd64.tar.gz",
+      "sha256": "d9e683663c87e2bc9c3cddaff6f116d6993149c044383e951fb461e0390dab11"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/claude-accounts_darwin_arm64.tar.gz",
+      "sha256": "0b463afe8c45367b074bf34b9efd762092597de2c95f502681ddd4d0f5159eb3"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/claude-accounts_windows_amd64.zip",
+      "sha256": "7339fa11fc6fbfde87ed1af636dd23dc19ace44af52798aa932a04cb03a9a2c6"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/claude-accounts_windows_arm64.zip",
+      "sha256": "adbe46b5798a3548d199c9ab20846f703d9898f1497a5ea1cb8cc2079a30289a"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}

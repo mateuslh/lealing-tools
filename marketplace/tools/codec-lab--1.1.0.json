@@ -1,0 +1,48 @@
+{
+  "id": "codec-lab",
+  "version": "1.1.0",
+  "name": "Codecs Base64 e URL",
+  "summary": "Codifique e decodifique Base64, Base64URL e componentes de URL.",
+  "detail": "Transforma texto localmente sem executar nem interpretar a saída como comando.",
+  "category": "dev",
+  "risk": "safe",
+  "glyph": "⇄",
+  "permissions": {
+    "filesystem": {
+      "read": [],
+      "write": []
+    },
+    "network": false,
+    "subprocess": false
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/codec-lab_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/codec-lab_darwin_amd64.tar.gz",
+      "sha256": "3a3b7cffdd6de621656d54566eabddaaeba5db65a12ce3c8945750cd279fb7c5"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/codec-lab_darwin_arm64.tar.gz",
+      "sha256": "d1272972c41c75943e07f4c0e61e5937412850fa20e7f02b0d96d345cceff4cd"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/codec-lab_windows_amd64.zip",
+      "sha256": "c33f8e9aa63f8b110c0f5d02183715fd3a381a18ddd681336a8fc245015a517d"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/codec-lab_windows_arm64.zip",
+      "sha256": "b92bbb2068aaf82f63cffb06eef190867e9a9891ab5a1dca073bce297c51dc95"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}

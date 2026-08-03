@@ -1,0 +1,48 @@
+{
+  "id": "http-probe",
+  "version": "1.1.0",
+  "name": "Sonda HTTP",
+  "summary": "Inspecione status, latência, headers e uma prévia segura de uma URL.",
+  "detail": "Executa GET ou HEAD com timeout, limite de corpo e redirecionamentos controlados.",
+  "category": "network",
+  "risk": "safe",
+  "glyph": "↗",
+  "permissions": {
+    "filesystem": {
+      "read": [],
+      "write": []
+    },
+    "network": true,
+    "subprocess": false
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/http-probe_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/http-probe_darwin_amd64.tar.gz",
+      "sha256": "501096ed47407aa1457e5c5f5ee9c7240750b19e41e86bfc83f77a2a715a32d7"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/http-probe_darwin_arm64.tar.gz",
+      "sha256": "f86703787cf7849a16f4da8a731d14d8a1de37dbdf3faa6668472b53936d7d41"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/http-probe_windows_amd64.zip",
+      "sha256": "536e0ac14f330e6606d68117111368573ca299fa376486035a950b2a7da1a70d"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.1.0/http-probe_windows_arm64.zip",
+      "sha256": "401b872d5af91b6506367f25747e10a5a65d2a367d94f8bcfb0160d041983b5f"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}
