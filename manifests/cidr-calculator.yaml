@@ -1,0 +1,15 @@
+apiVersion: lealing.dev/v1
+id: cidr-calculator
+version: 1.1.0
+name: Calculadora CIDR
+summary: Calcule rede, faixa, broadcast e capacidade de blocos IPv4 ou IPv6.
+detail: Normaliza o bloco e calcula máscara, primeiro e último endereço e quantidade total.
+category: network
+risk: safe
+glyph: ▦
+keywords: [cidr, subnet, rede, máscara, broadcast, ipv4, ipv6]
+runtime: {kind: process, protocol: {min: 1, max: 1}, executable: lealing-tool-cidr-calculator}
+ui: {mode: screen-v1, capabilities: [navigation.back]}
+platforms: [darwin-amd64, darwin-arm64, windows-amd64, windows-arm64]
+requirements: []
+permissions: {filesystem: {read: [], write: []}, network: false, subprocess: false}

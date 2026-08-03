@@ -1,0 +1,15 @@
+apiVersion: lealing.dev/v1
+id: codec-lab
+version: 1.1.0
+name: Codecs Base64 e URL
+summary: Codifique e decodifique Base64, Base64URL e componentes de URL.
+detail: Transforma texto localmente sem executar nem interpretar a saída como comando.
+category: dev
+risk: safe
+glyph: ⇄
+keywords: [base64, base64url, url, encode, decode]
+runtime: {kind: process, protocol: {min: 1, max: 1}, executable: lealing-tool-codec-lab}
+ui: {mode: screen-v1, capabilities: [navigation.back]}
+platforms: [darwin-amd64, darwin-arm64, windows-amd64, windows-arm64]
+requirements: []
+permissions: {filesystem: {read: [], write: []}, network: false, subprocess: false}

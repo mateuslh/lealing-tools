@@ -1,0 +1,15 @@
+apiVersion: lealing.dev/v1
+id: checksum-lab
+version: 1.1.0
+name: Gerador de Checksums
+summary: Gere hashes SHA-256, SHA-512 ou SHA-1 de texto sem tocar em serviços externos.
+detail: Calcula o digest do texto exatamente como digitado e sinaliza o uso legado de SHA-1.
+category: dev
+risk: safe
+glyph: "#"
+keywords: [sha256, sha512, sha1, hash, digest, checksum]
+runtime: {kind: process, protocol: {min: 1, max: 1}, executable: lealing-tool-checksum-lab}
+ui: {mode: screen-v1, capabilities: [navigation.back]}
+platforms: [darwin-amd64, darwin-arm64, windows-amd64, windows-arm64]
+requirements: []
+permissions: {filesystem: {read: [], write: []}, network: false, subprocess: false}

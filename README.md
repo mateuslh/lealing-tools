@@ -5,10 +5,17 @@ Cada tool é um processo independente que conversa com a engine pelo protocolo
 público `screen-v1`; este repositório não importa nenhum pacote `internal/` da
 engine.
 
-## Tool disponível
+## Tools disponíveis
 
-- `token-usage`: agrega consumo, custos e cotas do Claude Code e Codex. Mantém
-  permanentemente o ID `token-usage`.
+- `token-usage`: consumo, custos e cotas do Claude Code e Codex;
+- `system-info`: sistema, chip, memória, uptime e bateria;
+- `power-control`: perfis de energia no macOS e Windows;
+- `claude-accounts`: alternância explícita de contas do Claude Code;
+- `http-probe`, `network-inspector`, `json-lab`, `jwt-inspector`,
+  `cidr-calculator`, `codec-lab`, `checksum-lab` e `uuid-generator`:
+  bancada de engenharia dividida em executáveis instaláveis independentes.
+
+Nenhuma delas é compilada dentro da engine.
 
 ## Desenvolvimento
 
@@ -37,7 +44,9 @@ scroll e I/O assíncrono real.
 
 ```sh
 make build VERSION=1.0.0
-lealing -tool-install ./bin
+lealing -tool-install ./bin/token-usage
+lealing -tool-install ./bin/system-info
+# repita para os demais diretórios em bin/
 lealing -tools
 ```
 
@@ -53,17 +62,21 @@ lealing -tool-update token-usage
 Atualização e rollback continuam sendo operações da engine:
 
 ```sh
-lealing -tool-update ./bin
+lealing -tool-update ./bin/token-usage
 lealing -tool-rollback token-usage
+lealing -tool-disable token-usage
+lealing -tool-enable token-usage
 lealing -tool-remove token-usage
 ```
 
 ## Artefatos oficiais
 
-A [última release](https://github.com/mateuslh/lealing-tools/releases/latest)
-contém binários para Darwin e Windows em amd64/arm64, `manifest.yaml`,
-`checksums.txt` e `index.json`. O índice estável pode ser obtido pela
-[URL da última versão](https://github.com/mateuslh/lealing-tools/releases/latest/download/index.json).
+Cada tool só entra no marketplace depois que seus pacotes para Darwin e
+Windows em amd64/arm64, manifest e checksums forem publicados. A
+[última release](https://github.com/mateuslh/lealing-tools/releases/latest)
+e o [índice consolidado](marketplace/index.json) são as fontes do que já foi
+publicado; uma pasta gerada por `make build` continua instalável localmente
+antes disso.
 
 O índice consolidado usado pela engine fica em
 [`marketplace/index.json`](marketplace/index.json). Autores de tools podem

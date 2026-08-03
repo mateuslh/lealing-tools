@@ -1,0 +1,15 @@
+apiVersion: lealing.dev/v1
+id: json-lab
+version: 1.1.0
+name: Laboratório JSON
+summary: Valide, formate ou compacte JSON com diagnóstico preciso de sintaxe.
+detail: Processa o conteúdo localmente e preserva números sem convertê-los para ponto flutuante.
+category: dev
+risk: safe
+glyph: "{"
+keywords: [json, formatar, validar, pretty, minify]
+runtime: {kind: process, protocol: {min: 1, max: 1}, executable: lealing-tool-json-lab}
+ui: {mode: screen-v1, capabilities: [navigation.back]}
+platforms: [darwin-amd64, darwin-arm64, windows-amd64, windows-arm64]
+requirements: []
+permissions: {filesystem: {read: [], write: []}, network: false, subprocess: false}

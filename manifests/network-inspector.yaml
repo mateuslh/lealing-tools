@@ -1,0 +1,15 @@
+apiVersion: lealing.dev/v1
+id: network-inspector
+version: 1.1.0
+name: Inspetor DNS e TLS
+summary: Resolva DNS ou examine validade, emissor e nomes de um certificado TLS.
+detail: Resolve endereços e nomes canônicos ou abre uma conexão somente para ler o certificado apresentado.
+category: network
+risk: safe
+glyph: ◎
+keywords: [dns, tls, ssl, certificado, cname, ip, san]
+runtime: {kind: process, protocol: {min: 1, max: 1}, executable: lealing-tool-network-inspector}
+ui: {mode: screen-v1, capabilities: [navigation.back]}
+platforms: [darwin-amd64, darwin-arm64, windows-amd64, windows-arm64]
+requirements: []
+permissions: {filesystem: {read: [], write: []}, network: true, subprocess: false}

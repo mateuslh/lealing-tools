@@ -1,6 +1,6 @@
 apiVersion: lealing.dev/v1
 id: token-usage
-version: 1.0.1
+version: 1.1.0
 name: Uso de Tokens
 summary: Consumo de tokens e custo estimado, somando todas as sessões, por modelo, dia e projeto.
 detail: Varre os logs do Claude Code e do Codex, normaliza o consumo relatado por cada CLI, consulta cotas quando há credenciais e estima o custo pela tabela de preços.

@@ -1,0 +1,18 @@
+apiVersion: lealing.dev/v1
+id: system-info
+version: 1.1.0
+name: Informações do Sistema
+summary: Veja versão do sistema, chip, memória, tempo ligado e estado da bateria.
+detail: Consulta informações nativas da máquina sem enviar dados para serviços externos.
+category: system
+risk: safe
+glyph: ◎
+keywords: [hardware, cpu, memória, uptime, bateria, macos, windows]
+runtime: {kind: process, protocol: {min: 1, max: 1}, executable: lealing-tool-system-info}
+ui: {mode: screen-v1}
+platforms: [darwin-amd64, darwin-arm64, windows-amd64, windows-arm64]
+requirements: []
+permissions:
+  filesystem: {read: [], write: []}
+  network: false
+  subprocess: true

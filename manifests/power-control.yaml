@@ -1,0 +1,18 @@
+apiVersion: lealing.dev/v1
+id: power-control
+version: 1.1.0
+name: Controle de Energia
+summary: Defina quando a máquina dorme na bateria e no carregador e ajuste políticas avançadas de energia.
+detail: Usa pmset no macOS e powercfg no Windows, mostrando somente os recursos que a plataforma sabe ler e gravar.
+category: system
+risk: caution
+glyph: ⏻
+keywords: [pmset, powercfg, energia, bateria, dormir, hibernar]
+runtime: {kind: process, protocol: {min: 1, max: 1}, executable: lealing-tool-power-control}
+ui: {mode: screen-v1}
+platforms: [darwin-amd64, darwin-arm64, windows-amd64, windows-arm64]
+requirements: []
+permissions:
+  filesystem: {read: [], write: []}
+  network: false
+  subprocess: true

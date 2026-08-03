@@ -1,0 +1,15 @@
+apiVersion: lealing.dev/v1
+id: uuid-generator
+version: 1.1.0
+name: Gerador de UUID
+summary: Gere lotes de UUID v4 criptograficamente aleatórios ou UUID v7 ordenáveis.
+detail: Usa crypto/rand e oferece UUID v4 aleatório ou UUID v7 ordenável por timestamp.
+category: dev
+risk: safe
+glyph: ✣
+keywords: [uuid, guid, v4, v7, identificador, aleatório]
+runtime: {kind: process, protocol: {min: 1, max: 1}, executable: lealing-tool-uuid-generator}
+ui: {mode: screen-v1, capabilities: [navigation.back]}
+platforms: [darwin-amd64, darwin-arm64, windows-amd64, windows-arm64]
+requirements: []
+permissions: {filesystem: {read: [], write: []}, network: false, subprocess: false}
