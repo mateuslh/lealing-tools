@@ -93,10 +93,11 @@ const (
 	userKey    = "userID"
 )
 
-// accountScopedCaches são chaves cujo conteúdo pertence à conta anterior:
-// cotas, modelos liberados, elegibilidade de plano. Deixá-las no lugar faz a
-// CLI abrir mostrando os limites da conta errada até a próxima atualização.
-// Todas são caches — a CLI as reconstrói sozinha.
+// accountScopedCaches são chaves cujo conteúdo pertence a uma conta: cotas,
+// modelos liberados, elegibilidade de plano. Elas viajam com o perfil —
+// deixá-las no lugar faz a CLI abrir mostrando os limites da conta errada, e
+// simplesmente apagá-las faz cada troca parecer um primeiro acesso. Todas são
+// caches, então a CLI reconstrói o que faltar.
 var accountScopedCaches = []string{
 	"cachedUsageUtilization",
 	"cachedExtraUsageDisabledReason",
@@ -111,20 +112,31 @@ var accountScopedCaches = []string{
 }
 
 // Account implementa ccaccount.Config.
-func (c *ConfigFile) Account(context.Context) (json.RawMessage, string, error) {
+func (c *ConfigFile) Account(context.Context) (json.RawMessage, string, map[string]json.RawMessage, error) {
 	doc, err := c.read()
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 	var userID string
 	if raw, ok := doc[userKey]; ok {
 		_ = json.Unmarshal(raw, &userID)
 	}
-	return doc[accountKey], userID, nil
+	var caches map[string]json.RawMessage
+	for _, key := range accountScopedCaches {
+		raw, ok := doc[key]
+		if !ok {
+			continue
+		}
+		if caches == nil {
+			caches = make(map[string]json.RawMessage, len(accountScopedCaches))
+		}
+		caches[key] = raw
+	}
+	return doc[accountKey], userID, caches, nil
 }
 
 // SetAccount implementa ccaccount.Config.
-func (c *ConfigFile) SetAccount(_ context.Context, account json.RawMessage, userID string) error {
+func (c *ConfigFile) SetAccount(_ context.Context, account json.RawMessage, userID string, caches map[string]json.RawMessage) error {
 	doc, err := c.read()
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
@@ -147,8 +159,15 @@ func (c *ConfigFile) SetAccount(_ context.Context, account json.RawMessage, user
 	} else {
 		delete(doc, userKey)
 	}
+	// Apaga primeiro e repõe depois: um cache que o perfil não guardou não
+	// pode sobreviver da conta anterior só porque o novo não o menciona.
 	for _, key := range accountScopedCaches {
 		delete(doc, key)
+	}
+	for key, raw := range caches {
+		if len(raw) > 0 {
+			doc[key] = raw
+		}
 	}
 
 	// Dois espaços de indentação: é o formato que a própria CLI grava, e

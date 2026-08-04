@@ -235,7 +235,7 @@ func TestSessaoNaoGuardadaViraPerguntaAntesDaTroca(t *testing.T) {
 	s := press(t, open(t, sp), "down", "enter")
 
 	out := stripANSI(s.View(tui.Frame{Width: 100, Height: 30}))
-	if !strings.Contains(out, "será perdida") {
+	if !strings.Contains(out, "serão perdidas") {
 		t.Fatalf("o aviso de perda não apareceu:\n%s", out)
 	}
 	if len(sp.forced) != 0 {

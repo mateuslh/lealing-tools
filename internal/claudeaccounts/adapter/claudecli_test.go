@@ -54,7 +54,7 @@ func TestConfigPreservaOResto(t *testing.T) {
 
 	cfg := &ConfigFile{Path: path, BackupPath: filepath.Join(dir, "backup.json")}
 	novo := json.RawMessage(`{"emailAddress":"nova@exemplo.com"}`)
-	if err := cfg.SetAccount(context.Background(), novo, "user-novo"); err != nil {
+	if err := cfg.SetAccount(context.Background(), novo, "user-novo", nil); err != nil {
 		t.Fatalf("SetAccount: %v", err)
 	}
 
@@ -77,7 +77,7 @@ func TestConfigPreservaOResto(t *testing.T) {
 		t.Error("o cache de cota da conta anterior continuou no arquivo")
 	}
 
-	account, userID, err := cfg.Account(context.Background())
+	account, userID, _, err := cfg.Account(context.Background())
 	if err != nil {
 		t.Fatalf("Account: %v", err)
 	}
@@ -104,14 +104,62 @@ func TestConfigPreservaOResto(t *testing.T) {
 	}
 }
 
+// As cotas e os modelos liberados são da conta: viajam com o perfil, e um
+// cache que o perfil não guardou não pode sobreviver da conta anterior.
+func TestConfigTrocaOsCachesDaConta(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "claude.json")
+	if err := os.WriteFile(path, []byte(`{
+  "projects": {"/tmp/x": {}},
+  "oauthAccount": {"emailAddress": "antiga@exemplo.com"},
+  "cachedUsageUtilization": {"fiveHour": 0.9},
+  "modelAccessCache": {"opus": true}
+}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg := &ConfigFile{Path: path}
+
+	_, _, caches, err := cfg.Account(ctx)
+	if err != nil {
+		t.Fatalf("Account: %v", err)
+	}
+	if len(caches) != 2 {
+		t.Fatalf("caches lidos: %v", caches)
+	}
+
+	// A conta nova só conhece um dos caches.
+	novos := map[string]json.RawMessage{"cachedUsageUtilization": json.RawMessage(`{"fiveHour":0.1}`)}
+	if err := cfg.SetAccount(ctx, json.RawMessage(`{"emailAddress":"nova@exemplo.com"}`), "u", novos); err != nil {
+		t.Fatalf("SetAccount: %v", err)
+	}
+
+	var doc map[string]json.RawMessage
+	raw, _ := os.ReadFile(path)
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	var uso struct {
+		FiveHour float64 `json:"fiveHour"`
+	}
+	if err := json.Unmarshal(doc["cachedUsageUtilization"], &uso); err != nil || uso.FiveHour != 0.1 {
+		t.Errorf("o cache da conta nova não entrou: %s (%v)", doc["cachedUsageUtilization"], err)
+	}
+	if _, ok := doc["modelAccessCache"]; ok {
+		t.Error("um cache da conta anterior sobreviveu porque a nova não o menciona")
+	}
+	if _, ok := doc["projects"]; !ok {
+		t.Error("a troca de caches apagou os projetos do usuário")
+	}
+}
+
 func TestConfigCriaArquivoQuandoNaoExiste(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &ConfigFile{Path: filepath.Join(dir, "claude.json")}
 
-	if err := cfg.SetAccount(context.Background(), json.RawMessage(`{"emailAddress":"a@b.c"}`), "u"); err != nil {
+	if err := cfg.SetAccount(context.Background(), json.RawMessage(`{"emailAddress":"a@b.c"}`), "u", nil); err != nil {
 		t.Fatalf("SetAccount: %v", err)
 	}
-	if _, _, err := cfg.Account(context.Background()); err != nil {
+	if _, _, _, err := cfg.Account(context.Background()); err != nil {
 		t.Fatalf("Account: %v", err)
 	}
 }
@@ -128,10 +176,10 @@ func TestConfigRemoveIdentidadeAusenteEmVezDeMisturarContas(t *testing.T) {
 	}
 
 	cfg := &ConfigFile{Path: path}
-	if err := cfg.SetAccount(context.Background(), nil, ""); err != nil {
+	if err := cfg.SetAccount(context.Background(), nil, "", nil); err != nil {
 		t.Fatalf("SetAccount: %v", err)
 	}
-	account, userID, err := cfg.Account(context.Background())
+	account, userID, _, err := cfg.Account(context.Background())
 	if err != nil {
 		t.Fatalf("Account: %v", err)
 	}

@@ -27,7 +27,7 @@ var modelFactory screen.Factory = func(session screen.Session) screen.Model {
 		adapter.NewConfigFile(adapter.ConfigPath(home), filepath.Join(session.Initialize.DataDir, "claude-json.backup")),
 		adapter.NewStore(filepath.Join(session.Initialize.DataDir, "claude-accounts.json")),
 		nil,
-	).WithDirectAuth(adapter.NewSettingsAuth(adapter.SettingsPath(home)))
+	).WithSettings(adapter.NewSettingsFile(adapter.SettingsPath(home)))
 	return ui.New(uitui.Deps{Theme: theme.From(session.Initialize.Theme)}, manager, nil)
 }
 

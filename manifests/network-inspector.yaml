@@ -1,6 +1,6 @@
 apiVersion: lealing.dev/v1
 id: network-inspector
-version: 1.2.0
+version: 1.3.0
 name: Inspetor DNS e TLS
 summary: Resolva DNS ou examine validade, emissor e nomes de um certificado TLS.
 detail: Resolve endereços e nomes canônicos ou abre uma conexão somente para ler o certificado apresentado.

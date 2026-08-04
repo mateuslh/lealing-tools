@@ -65,11 +65,18 @@ func (m AuthMethod) Label() string {
 	}
 }
 
-// Session é o estado completo de uma conta: o que a CLI precisa encontrar
-// para se considerar logada.
+// Session é o estado completo de uma conta: tudo o que a CLI precisa
+// encontrar para se considerar logada naquela conta, e nada além disso.
+//
+// A fronteira é deliberada. Entra o que identifica, autentica e configura a
+// conta; fica de fora o que é trabalho — transcrições, planos, tarefas,
+// histórico —, que continua no lugar para que trocar de conta não faça o
+// usuário perder de onde parou.
 type Session struct {
 	// Method vazio representa o login persistido pela própria CLI. Nos
 	// demais métodos, AuthValue é o token, a chave ou o comando do helper.
+	// Ambos são derivados de Settings: descrevem o que vence, não são a
+	// fonte da verdade da restauração.
 	Method    AuthMethod
 	AuthValue string
 	// Origin só descreve a fonte ativa na tela; nunca é persistida no perfil.
@@ -82,14 +89,24 @@ type Session struct {
 	Account json.RawMessage
 	// UserID é o campo "userID" do mesmo arquivo.
 	UserID string
+	// Caches são as chaves do ~/.claude.json cujo conteúdo pertence à conta:
+	// cotas, modelos liberados, elegibilidade de plano. Guardá-las com o
+	// perfil é o que faz a conta voltar como estava, e não como se fosse a
+	// primeira vez.
+	Caches map[string]json.RawMessage
+	// Settings é o ~/.claude/settings.json inteiro. Inteiro, e não uma lista
+	// de chaves conhecidas: foi exatamente uma lista dessas que deixou um
+	// ANTHROPIC_BASE_URL de gateway apontado para o lugar errado depois de
+	// voltar para uma conta de login comum.
+	Settings json.RawMessage
 }
 
 // Valid informa se a sessão tem o mínimo para ser restaurada.
+//
+// Credencial ou autenticação direta bastam: um perfil de API key não tem
+// credencial no cofre, e um de login não precisa de token no settings.
 func (s Session) Valid() bool {
-	if s.Method == AuthClaudeLogin {
-		return len(s.Credential) > 0
-	}
-	return s.AuthValue != ""
+	return len(s.Credential) > 0 || s.AuthValue != ""
 }
 
 // Identity são os campos legíveis de uma conta, extraídos da sessão.
@@ -169,17 +186,30 @@ type Vault interface {
 	Origin() string
 }
 
-// Config é o ~/.claude.json, do qual só a identidade da conta nos interessa.
+// Config é o ~/.claude.json, do qual só o que pertence à conta nos
+// interessa: a identidade e os caches escopados nela. Todo o resto do
+// arquivo — projetos, dicas, contadores, machineID — é da máquina e do
+// trabalho, e atravessa a troca intacto.
 type Config interface {
-	Account(ctx context.Context) (account json.RawMessage, userID string, err error)
-	SetAccount(ctx context.Context, account json.RawMessage, userID string) error
+	Account(ctx context.Context) (account json.RawMessage, userID string, caches map[string]json.RawMessage, err error)
+	SetAccount(ctx context.Context, account json.RawMessage, userID string, caches map[string]json.RawMessage) error
 }
 
-// DirectAuth lê e aplica as autenticações que o Claude Code recebe pelo
-// bloco env ou por apiKeyHelper no settings.json.
-type DirectAuth interface {
-	Read(ctx context.Context) (method AuthMethod, value, origin string, err error)
-	Apply(ctx context.Context, method AuthMethod, value string) error
+// Settings é o ~/.claude/settings.json, capturado e devolvido inteiro.
+type Settings interface {
+	// Snapshot devolve o arquivo como está. Ausente devolve nil sem erro:
+	// uma conta sem settings.json é uma conta legítima.
+	Snapshot(ctx context.Context) (json.RawMessage, error)
+	// Restore grava o arquivo inteiro.
+	Restore(ctx context.Context, doc json.RawMessage) error
+	// ApplyAuth troca somente a autenticação, preservando o resto do
+	// arquivo. É o caminho dos perfis salvos antes de a tool passar a
+	// guardar o settings inteiro: restaurar um snapshot que eles não têm
+	// apagaria model, tema e permissões de quem só queria trocar de conta.
+	ApplyAuth(ctx context.Context, method AuthMethod, value string) error
+	// Auth descreve a autenticação efetiva na ordem de precedência da CLI,
+	// considerando também o que o shell exportou.
+	Auth(ctx context.Context) (method AuthMethod, value, origin string, err error)
 }
 
 // Store é onde o lealing guarda os perfis.
@@ -207,17 +237,19 @@ type Switcher interface {
 // Manager é o caso de uso da tool: ler o estado, guardar a sessão ativa e
 // restaurar uma guardada.
 type Manager struct {
-	vault  Vault
-	config Config
-	store  Store
-	direct DirectAuth
-	now    func() time.Time
+	vault    Vault
+	config   Config
+	store    Store
+	settings Settings
+	now      func() time.Time
 }
 
-// WithDirectAuth habilita tokens, API keys e apiKeyHelper preservando o
-// construtor compatível com integrações que só conhecem o login tradicional.
-func (m *Manager) WithDirectAuth(direct DirectAuth) *Manager {
-	m.direct = direct
+// WithSettings habilita a captura e a restauração do settings.json —
+// e com ela tokens, API keys, apiKeyHelper e tudo o mais que o arquivo
+// carrega. Fica opcional para preservar o construtor compatível com
+// integrações que só conhecem o login tradicional.
+func (m *Manager) WithSettings(settings Settings) *Manager {
+	m.settings = settings
 	return m
 }
 
@@ -282,25 +314,43 @@ func (m *Manager) State(ctx context.Context) (State, error) {
 	return st, nil
 }
 
-// Current lê a sessão ativa juntando cofre e configuração.
+// Current lê a sessão ativa juntando cofre, configuração e settings.
+//
+// Lê tudo, e não só a fonte que vence: uma conta com API key no settings
+// pode ter também o login OAuth no cofre, e um perfil que guardasse apenas
+// a primeira voltaria pela metade. Method descreve qual delas a CLI vai
+// usar; a sessão carrega as duas.
 func (m *Manager) Current(ctx context.Context) (Session, error) {
-	if m.direct != nil {
-		method, value, origin, err := m.direct.Read(ctx)
-		if err == nil {
-			return Session{Method: method, AuthValue: value, Origin: origin}, nil
+	var session Session
+
+	if m.settings != nil {
+		doc, err := m.settings.Snapshot(ctx)
+		if err != nil {
+			return Session{}, err
 		}
-		if !errors.Is(err, ErrNoDirectAuth) {
+		session.Settings = doc
+
+		method, value, origin, err := m.settings.Auth(ctx)
+		switch {
+		case err == nil:
+			session.Method, session.AuthValue, session.Origin = method, value, origin
+		case !errors.Is(err, ErrNoDirectAuth):
 			return Session{}, err
 		}
 	}
-	cred, err := m.vault.Read(ctx)
-	if err != nil || len(cred) == 0 {
+
+	if cred, err := m.vault.Read(ctx); err == nil && len(cred) > 0 {
+		session.Credential = cred
+	}
+	if !session.Valid() {
 		return Session{}, ErrNoActiveSession
 	}
+
 	// A identidade é acessório: uma credencial sem ~/.claude.json ainda é
 	// uma sessão válida, só menos informativa.
-	account, userID, _ := m.config.Account(ctx)
-	return Session{Credential: cred, Account: account, UserID: userID}, nil
+	account, userID, caches, _ := m.config.Account(ctx)
+	session.Account, session.UserID, session.Caches = account, userID, caches
+	return session, nil
 }
 
 // Save guarda a sessão ativa sob um nome.
@@ -418,33 +468,43 @@ func (m *Manager) activate(ctx context.Context, name string, force bool) error {
 		return m.activationFailure(ctx, current, hasCurrent,
 			fmt.Errorf("conferir a sessão depois da troca: %w", err))
 	}
-	if !sameSession(installed, session) {
+	if !installedAs(session, installed) {
 		return m.activationFailure(ctx, current, hasCurrent,
 			errors.New("a sessão conferida depois da troca difere do perfil escolhido"))
 	}
 	return nil
 }
 
-// install aplica uma sessão respeitando a precedência do Claude Code. Métodos
-// diretos apenas precisam entrar no settings.json; o login tradicional é
-// preparado no cofre antes de desabilitar variáveis que poderiam ocultá-lo.
+// install devolve a conta ao lugar, na ordem que a precedência do Claude
+// Code exige: a credencial fica pronta no cofre antes de o settings.json
+// decidir o que a CLI vai olhar primeiro.
 func (m *Manager) install(ctx context.Context, session Session) error {
-	if session.Method != AuthClaudeLogin {
-		if m.direct == nil {
-			return errors.New("esta instalação da tool não oferece autenticação direta")
+	if len(session.Credential) > 0 {
+		if err := m.vault.Write(ctx, session.Credential); err != nil {
+			return fmt.Errorf("gravar a credencial do login: %w", err)
 		}
-		return m.direct.Apply(ctx, session.Method, session.AuthValue)
 	}
-	if err := m.vault.Write(ctx, session.Credential); err != nil {
-		return fmt.Errorf("gravar a credencial do login: %w", err)
+	if err := m.config.SetAccount(ctx, session.Account, session.UserID, session.Caches); err != nil {
+		return fmt.Errorf("gravar a identidade da conta: %w", err)
 	}
-	if err := m.config.SetAccount(ctx, session.Account, session.UserID); err != nil {
-		return fmt.Errorf("gravar a identidade do login: %w", err)
-	}
-	if m.direct != nil {
-		if err := m.direct.Apply(ctx, AuthClaudeLogin, ""); err != nil {
-			return fmt.Errorf("desabilitar autenticação direta: %w", err)
+
+	if m.settings == nil {
+		if len(session.Settings) > 0 || session.AuthValue != "" {
+			return errors.New("esta instalação da tool não gerencia o settings.json")
 		}
+		return nil
+	}
+	// Perfil com snapshot volta inteiro. Sem snapshot é um perfil salvo por
+	// uma versão anterior da tool: ali só a autenticação foi guardada, e
+	// escrever um arquivo que não temos apagaria as preferências do usuário.
+	if len(session.Settings) > 0 {
+		if err := m.settings.Restore(ctx, session.Settings); err != nil {
+			return fmt.Errorf("restaurar as preferências da conta: %w", err)
+		}
+		return nil
+	}
+	if err := m.settings.ApplyAuth(ctx, session.Method, session.AuthValue); err != nil {
+		return fmt.Errorf("aplicar a autenticação do perfil: %w", err)
 	}
 	return nil
 }
@@ -509,13 +569,19 @@ func (m *Manager) syncProfile(ctx context.Context, profile Profile, current Sess
 	observed := Describe(current)
 	if expected.AccountUUID != "" || expected.Email != "" {
 		if observed.AccountUUID == "" && observed.Email == "" || !expected.SameAccount(observed) {
+			// Os caches acompanham a identidade: se o bloco descreve a conta
+			// errada, as cotas e os modelos ao lado também descrevem.
 			current.Account = saved.Account
 			current.UserID = saved.UserID
+			current.Caches = saved.Caches
 		}
 	}
 	if sameSession(saved, current) {
 		return profile, nil
 	}
+	// Um perfil salvo antes de a tool guardar o settings ganha o snapshot
+	// aqui, sozinho, na primeira vez que a conta dele estiver ativa.
+	profile.Method = current.Method
 	profile.Identity = mergeIdentity(profile.Identity, Describe(current))
 	profile.SavedAt = m.now()
 	if err := m.store.Save(ctx, profile, current); err != nil {
@@ -524,24 +590,41 @@ func (m *Manager) syncProfile(ctx context.Context, profile Profile, current Sess
 	return profile, nil
 }
 
+// sameSession informa se o perfil guardado já descreve a sessão observada.
+//
+// Os caches ficam de fora de propósito: a CLI os reescreve o tempo todo, e
+// incluí-los faria a tela regravar o perfil a cada atualização — no macOS,
+// um processo do chaveiro por perfil por refresh.
 func sameSession(a, b Session) bool {
-	if !sameAuth(a, b) {
-		return false
-	}
-	if a.Method != AuthClaudeLogin {
-		return true
-	}
-	return sameJSON(a.Account, b.Account) && a.UserID == b.UserID
+	return sameAuth(a, b) &&
+		sameJSON(a.Account, b.Account) && a.UserID == b.UserID &&
+		sameJSON(a.Settings, b.Settings)
 }
 
+// sameAuth compara só o que autentica. É o que casa perfil e sessão ativa,
+// e por isso ignora o settings: mexer no tema ou num hook não pode fazer a
+// conta ativa parecer não guardada.
 func sameAuth(a, b Session) bool {
-	if a.Method != b.Method {
+	if a.Method != b.Method || a.AuthValue != b.AuthValue {
 		return false
 	}
-	if a.Method != AuthClaudeLogin {
-		return a.AuthValue == b.AuthValue
+	// No login tradicional a credencial é a própria autenticação. Nos métodos
+	// diretos ela é bagagem: um perfil guardado sem credencial não deixa de
+	// ser o mesmo porque o cofre tem uma sobrando de outro login.
+	if a.Method != AuthClaudeLogin && (len(a.Credential) == 0 || len(b.Credential) == 0) {
+		return true
 	}
 	return sameJSON(a.Credential, b.Credential)
+}
+
+// installedAs confere a sessão relida contra o perfil que acabou de ser
+// aplicado. Um perfil sem snapshot de settings não promete nada sobre o
+// arquivo — cobrar dele o que não guardou reprovaria uma troca correta.
+func installedAs(want, got Session) bool {
+	if !sameAuth(want, got) || !sameJSON(want.Account, got.Account) || want.UserID != got.UserID {
+		return false
+	}
+	return len(want.Settings) == 0 || sameJSON(want.Settings, got.Settings)
 }
 
 func sameJSON(a, b json.RawMessage) bool {

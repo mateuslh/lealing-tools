@@ -1,6 +1,6 @@
 apiVersion: lealing.dev/v1
 id: http-probe
-version: 1.2.0
+version: 1.3.0
 name: Sonda HTTP
 summary: Inspecione status, latência, headers e uma prévia segura de uma URL.
 detail: Executa GET ou HEAD com timeout, limite de corpo e redirecionamentos controlados.

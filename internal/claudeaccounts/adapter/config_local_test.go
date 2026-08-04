@@ -41,7 +41,7 @@ func TestConfigRealDaMaquinaAtravessaIntacto(t *testing.T) {
 
 	cfg := &ConfigFile{Path: copia, BackupPath: filepath.Join(dir, "bak.json")}
 	novo := json.RawMessage(`{"emailAddress":"outra@exemplo.com","accountUuid":"uuid-outro"}`)
-	if err := cfg.SetAccount(context.Background(), novo, "user-outro"); err != nil {
+	if err := cfg.SetAccount(context.Background(), novo, "user-outro", nil); err != nil {
 		t.Fatalf("SetAccount: %v", err)
 	}
 

@@ -71,16 +71,25 @@ type profileRecord struct {
 	SavedAt      time.Time `json:"saved_at"`
 }
 
-// sessionRecord é a credencial serializada dentro do cofre.
+// sessionRecord é a conta serializada dentro do cofre.
+//
+// Vai inteira para o cofre, e não só a credencial: o settings.json pode
+// carregar tokens de gateway e o bloco da conta traz o e-mail. Separar o que
+// dentro dele é segredo daria uma regra frágil por uma economia nenhuma.
 type sessionRecord struct {
-	AuthMethod ccaccount.AuthMethod `json:"auth_method,omitempty"`
-	AuthValue  string               `json:"auth_value,omitempty"`
-	Credential json.RawMessage      `json:"credential"`
-	Account    json.RawMessage      `json:"account,omitempty"`
-	UserID     string               `json:"user_id,omitempty"`
+	AuthMethod ccaccount.AuthMethod       `json:"auth_method,omitempty"`
+	AuthValue  string                     `json:"auth_value,omitempty"`
+	Credential json.RawMessage            `json:"credential"`
+	Account    json.RawMessage            `json:"account,omitempty"`
+	UserID     string                     `json:"user_id,omitempty"`
+	Caches     map[string]json.RawMessage `json:"caches,omitempty"`
+	Settings   json.RawMessage            `json:"settings,omitempty"`
 }
 
-const indexVersion = 2
+// indexVersion 3 acrescentou o settings e os caches ao perfil. Os registros
+// da 2 continuam legíveis: sem snapshot, o perfil restaura só a autenticação,
+// e ganha o snapshot na primeira vez que sua conta estiver ativa.
+const indexVersion = 3
 
 // --- Porta -------------------------------------------------------------
 
@@ -118,6 +127,8 @@ func (s *Store) Load(ctx context.Context, name string) (ccaccount.Session, error
 		Credential: rec.Credential,
 		Account:    rec.Account,
 		UserID:     rec.UserID,
+		Caches:     rec.Caches,
+		Settings:   rec.Settings,
 	}, nil
 }
 
@@ -133,6 +144,8 @@ func (s *Store) Save(ctx context.Context, profile ccaccount.Profile, session cca
 		Credential: session.Credential,
 		Account:    session.Account,
 		UserID:     session.UserID,
+		Caches:     session.Caches,
+		Settings:   session.Settings,
 	})
 	if err != nil {
 		return err

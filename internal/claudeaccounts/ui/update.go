@@ -61,7 +61,7 @@ func (m *Model) handleAction(msg actionMsg) tea.Cmd {
 
 	case errors.Is(msg.err, core.ErrActiveUnsaved):
 		return m.ask(intentActivateUnsaved, msg.name,
-			"a sessão ativa não está salva e será perdida. Trocar mesmo assim?")
+			"a conta ativa não está salva — credencial e configuração serão perdidas. Trocar mesmo assim?")
 
 	default:
 		m.status = status{msg.err.Error(), toneErr}

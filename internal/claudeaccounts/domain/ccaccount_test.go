@@ -66,52 +66,74 @@ func (f *fakeVault) Origin() string { return "cofre de teste" }
 type fakeConfig struct {
 	account json.RawMessage
 	userID  string
+	caches  map[string]json.RawMessage
 	setErr  error
 }
 
-type fakeDirectAuth struct {
-	method         ccaccount.AuthMethod
-	value          string
-	origin         string
-	err            error
-	applyErr       error
-	failAfterApply bool
+func (f *fakeConfig) Account(context.Context) (json.RawMessage, string, map[string]json.RawMessage, error) {
+	return f.account, f.userID, f.caches, nil
 }
 
-func (f *fakeDirectAuth) Read(context.Context) (ccaccount.AuthMethod, string, string, error) {
-	if f.err != nil {
-		return ccaccount.AuthClaudeLogin, "", "", f.err
-	}
-	if f.method == ccaccount.AuthClaudeLogin {
-		return ccaccount.AuthClaudeLogin, "", "", ccaccount.ErrNoDirectAuth
-	}
-	return f.method, f.value, f.origin, nil
-}
-
-func (f *fakeDirectAuth) Apply(_ context.Context, method ccaccount.AuthMethod, value string) error {
-	err := f.applyErr
-	f.applyErr = nil
-	if err == nil || f.failAfterApply {
-		f.method, f.value = method, value
-		if method == ccaccount.AuthClaudeLogin {
-			f.value = ""
-		}
-	}
-	return err
-}
-
-func (f *fakeConfig) Account(context.Context) (json.RawMessage, string, error) {
-	return f.account, f.userID, nil
-}
-
-func (f *fakeConfig) SetAccount(_ context.Context, a json.RawMessage, id string) error {
+func (f *fakeConfig) SetAccount(_ context.Context, a json.RawMessage, id string, caches map[string]json.RawMessage) error {
 	if f.setErr != nil {
 		err := f.setErr
 		f.setErr = nil
 		return err
 	}
-	f.account, f.userID = a, id
+	f.account, f.userID, f.caches = a, id, caches
 	return nil
+}
+
+// fakeSettings imita o settings.json: guarda o documento inteiro e deriva
+// dele a autenticação efetiva, para que Snapshot e Restore fechem a volta.
+// O campo "extra" faz o papel do ANTHROPIC_BASE_URL — configuração que é da
+// conta sem ser autenticação, e que precisa viajar junto.
+type fakeSettings struct {
+	doc              json.RawMessage
+	origin           string
+	snapshotErr      error
+	restoreErr       error
+	failAfterRestore bool
+}
+
+func (f *fakeSettings) set(method ccaccount.AuthMethod, value, extra string) {
+	raw, _ := json.Marshal(map[string]string{
+		"method": string(method), "value": value, "extra": extra,
+	})
+	f.doc = raw
+}
+
+func (f *fakeSettings) parse() (method ccaccount.AuthMethod, value, extra string) {
+	var d struct{ Method, Value, Extra string }
+	_ = json.Unmarshal(f.doc, &d)
+	return ccaccount.AuthMethod(d.Method), d.Value, d.Extra
+}
+
+func (f *fakeSettings) Snapshot(context.Context) (json.RawMessage, error) {
+	return f.doc, f.snapshotErr
+}
+
+func (f *fakeSettings) Restore(_ context.Context, doc json.RawMessage) error {
+	err := f.restoreErr
+	f.restoreErr = nil
+	if err == nil || f.failAfterRestore {
+		f.doc = doc
+	}
+	return err
+}
+
+func (f *fakeSettings) ApplyAuth(_ context.Context, method ccaccount.AuthMethod, value string) error {
+	_, _, extra := f.parse()
+	f.set(method, value, extra)
+	return nil
+}
+
+func (f *fakeSettings) Auth(context.Context) (ccaccount.AuthMethod, string, string, error) {
+	method, value, _ := f.parse()
+	if method == ccaccount.AuthClaudeLogin {
+		return ccaccount.AuthClaudeLogin, "", "", ccaccount.ErrNoDirectAuth
+	}
+	return method, value, f.origin, nil
 }
 
 type fakeStore struct {
@@ -483,8 +505,9 @@ func TestAtivarPerfilInexistente(t *testing.T) {
 
 func TestAlternaTodosOsMetodosDeAutenticacaoDireta(t *testing.T) {
 	m, vault, _, store := setup(t)
-	direct := &fakeDirectAuth{origin: "settings.json"}
-	m.WithDirectAuth(direct)
+	settings := &fakeSettings{origin: "settings.json"}
+	settings.set(ccaccount.AuthClaudeLogin, "", "config-do-login")
+	m.WithSettings(settings)
 	ctx := context.Background()
 
 	if _, err := m.Save(ctx, "login"); err != nil {
@@ -503,7 +526,7 @@ func TestAlternaTodosOsMetodosDeAutenticacaoDireta(t *testing.T) {
 		{"helper", ccaccount.AuthAPIHelper, "gera-chave --perfil trabalho"},
 	}
 	for _, test := range tests {
-		direct.method, direct.value = test.method, test.value
+		settings.set(test.method, test.value, "config-de-"+test.name)
 		profile, err := m.Save(ctx, test.name)
 		if err != nil {
 			t.Fatalf("Save %s: %v", test.name, err)
@@ -517,8 +540,12 @@ func TestAlternaTodosOsMetodosDeAutenticacaoDireta(t *testing.T) {
 		if err := m.Activate(ctx, test.name); err != nil {
 			t.Fatalf("Activate %s: %v", test.name, err)
 		}
-		if direct.method != test.method || direct.value != test.value {
-			t.Errorf("%s aplicou (%s, %q)", test.name, direct.method, direct.value)
+		method, value, extra := settings.parse()
+		if method != test.method || value != test.value {
+			t.Errorf("%s aplicou (%s, %q)", test.name, method, value)
+		}
+		if want := "config-de-" + test.name; extra != want {
+			t.Errorf("%s: configuração da conta ficou %q, esperava %q", test.name, extra, want)
 		}
 		st, err := m.State(ctx)
 		if err != nil || st.ActiveProfile != test.name || st.Method != test.method {
@@ -529,8 +556,12 @@ func TestAlternaTodosOsMetodosDeAutenticacaoDireta(t *testing.T) {
 	if err := m.Activate(ctx, "login"); err != nil {
 		t.Fatalf("Activate login: %v", err)
 	}
-	if direct.method != ccaccount.AuthClaudeLogin || direct.value != "" {
+	method, value, extra := settings.parse()
+	if method != ccaccount.AuthClaudeLogin || value != "" {
 		t.Error("voltar ao login não desabilitou as autenticações diretas")
+	}
+	if extra != "config-do-login" {
+		t.Errorf("voltar ao login deixou a configuração da conta anterior: %q", extra)
 	}
 	if string(vault.cred) != string(loginCredential) {
 		t.Error("voltar ao login não restaurou a credencial OAuth persistida")
@@ -542,28 +573,155 @@ func TestAlternaTodosOsMetodosDeAutenticacaoDireta(t *testing.T) {
 
 func TestAtivarReverteEscritaIncertaDaAutenticacaoDireta(t *testing.T) {
 	m, _, _, store := setup(t)
-	direct := &fakeDirectAuth{
-		method: ccaccount.AuthAPIKey, value: "api-anterior", origin: "settings.json",
-	}
-	m.WithDirectAuth(direct)
+	settings := &fakeSettings{origin: "settings.json"}
+	settings.set(ccaccount.AuthAPIKey, "api-anterior", "config-da-api")
+	m.WithSettings(settings)
 	ctx := context.Background()
 	if _, err := m.Save(ctx, "api"); err != nil {
 		t.Fatal(err)
 	}
-	bearer := ccaccount.Session{Method: ccaccount.AuthBearerToken, AuthValue: "bearer-novo"}
+
+	alvo := &fakeSettings{}
+	alvo.set(ccaccount.AuthBearerToken, "bearer-novo", "config-do-bearer")
+	bearer := ccaccount.Session{
+		Method: ccaccount.AuthBearerToken, AuthValue: "bearer-novo", Settings: alvo.doc,
+	}
 	if err := store.Save(ctx, ccaccount.Profile{
 		Name: "bearer", Method: bearer.Method, Identity: ccaccount.Describe(bearer), SavedAt: now(),
 	}, bearer); err != nil {
 		t.Fatal(err)
 	}
 
-	direct.applyErr = errors.New("não foi possível conferir settings.json")
-	direct.failAfterApply = true
+	settings.restoreErr = errors.New("não foi possível conferir settings.json")
+	settings.failAfterRestore = true
 	if err := m.Activate(ctx, "bearer"); err == nil {
 		t.Fatal("Activate devia falhar")
 	}
-	if direct.method != ccaccount.AuthAPIKey || direct.value != "api-anterior" {
-		t.Errorf("autenticação anterior não foi restaurada: (%s, %q)", direct.method, direct.value)
+	method, value, extra := settings.parse()
+	if method != ccaccount.AuthAPIKey || value != "api-anterior" {
+		t.Errorf("autenticação anterior não foi restaurada: (%s, %q)", method, value)
+	}
+	if extra != "config-da-api" {
+		t.Errorf("configuração anterior não foi restaurada: %q", extra)
+	}
+}
+
+// A configuração de uma conta não é só o token: um gateway traz endpoint e
+// nomes de modelo próprios, e voltar para a conta de login com o endpoint da
+// outra no lugar quebra as duas.
+func TestTrocaDeContaLevaAConfiguracaoInteiraJunto(t *testing.T) {
+	m, vault, config, _ := setup(t)
+	settings := &fakeSettings{origin: "settings.json"}
+	settings.set(ccaccount.AuthClaudeLogin, "", "api.anthropic.com")
+	m.WithSettings(settings)
+	ctx := context.Background()
+
+	if _, err := m.Save(ctx, "pessoal"); err != nil {
+		t.Fatalf("Save pessoal: %v", err)
+	}
+
+	// A conta do trabalho passa por um gateway, com chave e endereço próprios.
+	settings.set(ccaccount.AuthAPIKey, "chave-do-gateway", "gateway.empresa.com")
+	vault.cred = credential("team", now().Add(time.Hour), now().AddDate(0, 0, 30))
+	config.account = account("eu@empresa.com", "Empresa", "uuid-empresa")
+	if _, err := m.Save(ctx, "trabalho"); err != nil {
+		t.Fatalf("Save trabalho: %v", err)
+	}
+
+	if err := m.Activate(ctx, "pessoal"); err != nil {
+		t.Fatalf("Activate pessoal: %v", err)
+	}
+	if _, _, extra := settings.parse(); extra != "api.anthropic.com" {
+		t.Errorf("voltar à conta pessoal manteve o endereço do gateway: %q", extra)
+	}
+
+	if err := m.Activate(ctx, "trabalho"); err != nil {
+		t.Fatalf("Activate trabalho: %v", err)
+	}
+	method, value, extra := settings.parse()
+	if method != ccaccount.AuthAPIKey || value != "chave-do-gateway" || extra != "gateway.empresa.com" {
+		t.Errorf("a conta do gateway não voltou inteira: (%s, %q, %q)", method, value, extra)
+	}
+}
+
+// Cotas e modelos liberados são da conta. Guardá-los faz a conta voltar como
+// estava; apagá-los fazia cada troca parecer um primeiro acesso.
+func TestCachesDaContaVoltamComOPerfil(t *testing.T) {
+	m, vault, config, _ := setup(t)
+	ctx := context.Background()
+
+	config.caches = map[string]json.RawMessage{"cachedUsageUtilization": json.RawMessage(`{"pct":10}`)}
+	if _, err := m.Save(ctx, "pessoal"); err != nil {
+		t.Fatalf("Save pessoal: %v", err)
+	}
+
+	vault.cred = credential("team", now().Add(time.Hour), now().AddDate(0, 0, 30))
+	config.account = account("eu@empresa.com", "Empresa", "uuid-empresa")
+	config.caches = map[string]json.RawMessage{"cachedUsageUtilization": json.RawMessage(`{"pct":90}`)}
+	if _, err := m.Save(ctx, "trabalho"); err != nil {
+		t.Fatalf("Save trabalho: %v", err)
+	}
+
+	if err := m.Activate(ctx, "pessoal"); err != nil {
+		t.Fatalf("Activate pessoal: %v", err)
+	}
+	if got := string(config.caches["cachedUsageUtilization"]); got != `{"pct":10}` {
+		t.Errorf("o cache de uso da conta pessoal não voltou: %s", got)
+	}
+}
+
+// Perfis salvos antes de a tool guardar o settings não prometem nada sobre o
+// arquivo. Restaurar um snapshot que eles não têm apagaria model, tema e
+// permissões de quem só queria trocar de conta.
+func TestPerfilSemSnapshotSoTrocaAAutenticacao(t *testing.T) {
+	m, _, _, store := setup(t)
+	settings := &fakeSettings{origin: "settings.json"}
+	settings.set(ccaccount.AuthAPIKey, "chave-atual", "preferencias-do-usuario")
+	m.WithSettings(settings)
+	ctx := context.Background()
+	if _, err := m.Save(ctx, "atual"); err != nil {
+		t.Fatal(err)
+	}
+
+	legado := ccaccount.Session{Method: ccaccount.AuthBearerToken, AuthValue: "bearer-legado"}
+	if err := store.Save(ctx, ccaccount.Profile{
+		Name: "legado", Method: legado.Method, SavedAt: now(),
+	}, legado); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := m.Activate(ctx, "legado"); err != nil {
+		t.Fatalf("Activate legado: %v", err)
+	}
+	method, value, extra := settings.parse()
+	if method != ccaccount.AuthBearerToken || value != "bearer-legado" {
+		t.Errorf("o perfil legado não aplicou a autenticação: (%s, %q)", method, value)
+	}
+	if extra != "preferencias-do-usuario" {
+		t.Errorf("o perfil legado apagou as preferências do usuário: %q", extra)
+	}
+}
+
+// O perfil legado ganha o snapshot sozinho, na primeira vez que a conta dele
+// estiver ativa — sem exigir que o usuário salve tudo de novo.
+func TestPerfilSemSnapshotGanhaUmQuandoSuaContaEstaAtiva(t *testing.T) {
+	m, vault, _, store := setup(t)
+	settings := &fakeSettings{origin: "settings.json"}
+	settings.set(ccaccount.AuthClaudeLogin, "", "config-corrente")
+	m.WithSettings(settings)
+	ctx := context.Background()
+
+	// Um perfil como a versão anterior o gravava: credencial, sem settings.
+	legado := ccaccount.Session{Credential: vault.cred}
+	if err := store.Save(ctx, ccaccount.Profile{Name: "pessoal", SavedAt: now()}, legado); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := m.State(ctx); err != nil {
+		t.Fatalf("State: %v", err)
+	}
+	if got := store.sessions["pessoal"]; len(got.Settings) == 0 {
+		t.Error("o perfil da conta ativa não ganhou o snapshot do settings")
 	}
 }
 
