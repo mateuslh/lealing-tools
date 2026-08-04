@@ -8,13 +8,13 @@ import (
 	"os/signal"
 	"path/filepath"
 
+	"github.com/mateuslh/lealing-sdk/protocol"
+	"github.com/mateuslh/lealing-sdk/screen"
 	adapter "github.com/mateuslh/lealing-tools/internal/claudeaccounts/adapter"
 	core "github.com/mateuslh/lealing-tools/internal/claudeaccounts/domain"
 	ui "github.com/mateuslh/lealing-tools/internal/claudeaccounts/ui"
 	"github.com/mateuslh/lealing-tools/internal/ui/theme"
 	uitui "github.com/mateuslh/lealing-tools/internal/ui/tui"
-	"github.com/mateuslh/lealing/sdk/protocol"
-	"github.com/mateuslh/lealing/sdk/screen"
 )
 
 var version = "dev"

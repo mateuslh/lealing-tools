@@ -3,7 +3,11 @@
 Tools oficiais instaláveis do [lealing](https://github.com/mateuslh/lealing).
 Cada tool é um processo independente que conversa com a engine pelo protocolo
 público `screen-v1`; este repositório não importa nenhum pacote `internal/` da
-engine.
+engine, nem o módulo da engine — o SDK (`protocol`, `screen`, `component`,
+`machine`) vem de [`github.com/mateuslh/lealing-sdk`](https://github.com/mateuslh/lealing-sdk),
+um repositório independente. A engine só entra em tempo de desenvolvimento,
+como binário externo chamado via `go run` para validar manifest e instalar
+localmente.
 
 ## Tools disponíveis
 
@@ -86,4 +90,7 @@ ser movida para este repositório.
 
 Uma publicação só ocorre depois de fmt, vet, testes, race, validação do
 manifest, conformidade do protocolo e toda a matriz de cross-build ficarem
-verdes.
+verdes. O workflow `official-tools` é um chamador fino do pipeline reusável
+[`publish-tools.yml`](https://github.com/mateuslh/lealing-sdk/blob/main/.github/workflows/publish-tools.yml)
+do `lealing-sdk`, que também é usado por `lealing-tools-bradesco` e `bravars` —
+a lógica de build/empacotamento/release fica num só lugar.

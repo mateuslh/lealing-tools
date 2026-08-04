@@ -10,12 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mateuslh/lealing-sdk/component"
+	"github.com/mateuslh/lealing-sdk/protocol"
+	"github.com/mateuslh/lealing-sdk/screen"
 	coretokens "github.com/mateuslh/lealing-tools/internal/tokenusage/tokens"
 	ui "github.com/mateuslh/lealing-tools/internal/tokenusage/ui"
 	"github.com/mateuslh/lealing-tools/internal/tokenusage/usage"
-	"github.com/mateuslh/lealing/sdk/component"
-	"github.com/mateuslh/lealing/sdk/protocol"
-	"github.com/mateuslh/lealing/sdk/screen"
 )
 
 var version = "dev"

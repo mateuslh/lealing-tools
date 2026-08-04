@@ -6,10 +6,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/mateuslh/lealing-sdk/component"
+	"github.com/mateuslh/lealing-sdk/protocol"
+	"github.com/mateuslh/lealing-sdk/screen"
 	coretokens "github.com/mateuslh/lealing-tools/internal/tokenusage/tokens"
-	"github.com/mateuslh/lealing/sdk/component"
-	"github.com/mateuslh/lealing/sdk/protocol"
-	"github.com/mateuslh/lealing/sdk/screen"
 )
 
 // ScreenID identifica esta tela.

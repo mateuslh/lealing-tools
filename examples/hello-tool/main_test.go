@@ -6,8 +6,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/mateuslh/lealing/sdk/component"
-	"github.com/mateuslh/lealing/sdk/protocol"
+	"github.com/mateuslh/lealing-sdk/component"
+	"github.com/mateuslh/lealing-sdk/protocol"
 )
 
 func TestExemploRespeitaGeometria(t *testing.T) {

@@ -5,9 +5,9 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/mateuslh/lealing-sdk/component"
+	"github.com/mateuslh/lealing-sdk/protocol"
 	coretokens "github.com/mateuslh/lealing-tools/internal/tokenusage/tokens"
-	"github.com/mateuslh/lealing/sdk/component"
-	"github.com/mateuslh/lealing/sdk/protocol"
 )
 
 // Pontos de quebra do painel.

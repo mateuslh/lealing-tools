@@ -9,9 +9,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/mateuslh/lealing-sdk/component"
+	"github.com/mateuslh/lealing-sdk/protocol"
 	coretokens "github.com/mateuslh/lealing-tools/internal/tokenusage/tokens"
-	"github.com/mateuslh/lealing/sdk/component"
-	"github.com/mateuslh/lealing/sdk/protocol"
 )
 
 type fakeGenerator struct{ report coretokens.Report }

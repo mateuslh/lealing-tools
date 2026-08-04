@@ -8,8 +8,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/mateuslh/lealing-sdk/component"
 	coretokens "github.com/mateuslh/lealing-tools/internal/tokenusage/tokens"
-	"github.com/mateuslh/lealing/sdk/component"
 )
 
 // formatCost apresenta valores em dólar com precisão proporcional à grandeza:

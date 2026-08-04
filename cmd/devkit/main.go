@@ -7,13 +7,13 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/mateuslh/lealing-sdk/protocol"
+	"github.com/mateuslh/lealing-sdk/screen"
 	adapter "github.com/mateuslh/lealing-tools/internal/devkit/adapter"
 	core "github.com/mateuslh/lealing-tools/internal/devkit/domain"
 	ui "github.com/mateuslh/lealing-tools/internal/devkit/ui"
 	"github.com/mateuslh/lealing-tools/internal/ui/theme"
 	uitui "github.com/mateuslh/lealing-tools/internal/ui/tui"
-	"github.com/mateuslh/lealing/sdk/protocol"
-	"github.com/mateuslh/lealing/sdk/screen"
 )
 
 var version = "dev"

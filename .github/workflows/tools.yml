@@ -9,178 +9,22 @@ on:
       version:
         description: "Nova versão conjunta (vX.Y.Z)"
         required: true
-        default: "v1.1.0"
+        default: "v1.3.0"
         type: string
 
 permissions:
   contents: read
 
-env:
-  ENGINE_VERSION: v0.4.0
-
-concurrency:
-  group: official-tools-${{ github.event_name == 'workflow_dispatch' && 'release' || github.ref }}
-  cancel-in-progress: false
-
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-      - name: fmt
-        run: test -z "$(gofmt -l -s .)"
-      - name: vet
-        run: go vet ./...
-      - name: test
-        run: go test ./...
-      - name: race
-        run: go test -race ./...
-      - name: valida manifests sem executar as tools
-        run: make manifest
-      - name: conformidade screen-v1
-        run: go test ./cmd/... -run TestConformidadeScreenV1 -count=1
-      - name: compilação cruzada de todas as tools
-        run: make cross
-      - name: valida índice público sem baixar artefatos
-        run: go run ./cmd/marketplace-index -check
-      - name: proíbe imports internos da engine
-        run: test -z "$(grep -R 'github.com/mateuslh/lealing/internal' --include='*.go' . || true)"
-
-  build:
-    if: github.event_name == 'workflow_dispatch'
-    needs: validate
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - goos: darwin
-            goarch: amd64
-            format: tar
-          - goos: darwin
-            goarch: arm64
-            format: tar
-          - goos: windows
-            goarch: amd64
-            format: zip
-          - goos: windows
-            goarch: arm64
-            format: zip
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-      - name: compila e empacota todas as tools
-        shell: bash
-        env:
-          TARGET_GOOS: ${{ matrix.goos }}
-          TARGET_GOARCH: ${{ matrix.goarch }}
-          PACKAGE_FORMAT: ${{ matrix.format }}
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
-          if [[ ! "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-            echo "versão inválida: $RELEASE_VERSION" >&2
-            exit 1
-          fi
-          tool_version="${RELEASE_VERSION#v}"
-          tools=(token-usage system-info power-control claude-accounts \
-            http-probe network-inspector json-lab jwt-inspector cidr-calculator \
-            codec-lab checksum-lab uuid-generator)
-          mkdir -p dist
-          for tool in "${tools[@]}"; do
-            manifest_version="$(awk '/^version:/ {print $2; exit}' "manifests/${tool}.yaml")"
-            if [[ "$manifest_version" != "$tool_version" ]]; then
-              echo "manifests/${tool}.yaml declara ${manifest_version}, esperado ${tool_version}" >&2
-              exit 1
-            fi
-            command="$tool"
-            case "$tool" in
-              http-probe|network-inspector|json-lab|jwt-inspector|cidr-calculator|codec-lab|checksum-lab|uuid-generator)
-                command=devkit
-                ;;
-            esac
-            stage="$(mktemp -d "${RUNNER_TEMP}/${tool}.XXXXXX")"
-            suffix=""
-            if [[ "$TARGET_GOOS" == windows ]]; then suffix=.exe; fi
-            GOOS="$TARGET_GOOS" GOARCH="$TARGET_GOARCH" CGO_ENABLED=0 go build -trimpath \
-              -ldflags="-s -w -X main.version=${tool_version}" \
-              -o "$stage/lealing-tool-${tool}${suffix}" "./cmd/${command}"
-            cp "manifests/${tool}.yaml" "$stage/manifest.yaml"
-            target="${tool}_${TARGET_GOOS}_${TARGET_GOARCH}"
-            if [[ "$PACKAGE_FORMAT" == zip ]]; then
-              (cd "$stage" && zip -q "$GITHUB_WORKSPACE/dist/${target}.zip" ./*)
-            else
-              tar -C "$stage" -czf "dist/${target}.tar.gz" .
-            fi
-          done
-      - uses: actions/upload-artifact@v7
-        with:
-          name: official-tools-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: |
-            dist/*.tar.gz
-            dist/*.zip
-          if-no-files-found: error
-
-  publish:
-    if: github.event_name == 'workflow_dispatch'
-    needs: build
-    runs-on: ubuntu-latest
+  tools:
+    uses: mateuslh/lealing-sdk/.github/workflows/publish-tools.yml@v0.1.0
     permissions:
       contents: write
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: official-tools-*
-          path: dist
-          merge-multiple: true
-      - name: gera manifests, checksums e entradas do índice
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: |
-          go run ./cmd/release-metadata -dir dist -manifests manifests \
-            -version "$RELEASE_VERSION" -repository "$GITHUB_REPOSITORY"
-      - uses: actions/upload-artifact@v7
-        with:
-          name: official-tools-${{ inputs.version }}
-          path: dist
-          if-no-files-found: error
-      - name: cria tag anotada e publica a release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
-          git fetch --tags
-          if git rev-parse -q --verify "refs/tags/${RELEASE_VERSION}" >/dev/null; then
-            echo "a tag ${RELEASE_VERSION} já existe e não será alterada" >&2
-            exit 1
-          fi
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git tag -a "$RELEASE_VERSION" "$GITHUB_SHA" -m "lealing-tools ${RELEASE_VERSION}"
-          git push origin "$RELEASE_VERSION"
-          mapfile -d '' assets < <(find dist -maxdepth 1 -type f -print0 | sort -z)
-          gh release create "$RELEASE_VERSION" "${assets[@]}" \
-            --verify-tag --title "lealing-tools ${RELEASE_VERSION}" --generate-notes
-      - name: publica entradas imutáveis no índice consolidado
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
-          cp dist/entries/*.json marketplace/tools/
-          go run ./cmd/marketplace-index
-          git add marketplace/tools marketplace/index.json
-          git commit -m "chore: indexa tools ${RELEASE_VERSION}"
-          git push origin HEAD:main
+    with:
+      tools: "token-usage system-info power-control claude-accounts http-probe network-inspector json-lab jwt-inspector cidr-calculator codec-lab checksum-lab uuid-generator"
+      devkit-tools: "http-probe network-inspector json-lab jwt-inspector cidr-calculator codec-lab checksum-lab uuid-generator"
+      channel: official
+      publish-index: true
+      default-version: "v1.3.0"
+      sdk-version: v0.1.0
+      version: ${{ inputs.version }}

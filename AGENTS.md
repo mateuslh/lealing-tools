@@ -2,7 +2,11 @@
 
 Este repositório contém somente tools externas. A engine vive em
 `github.com/mateuslh/lealing`; nenhuma tool pode importar pacotes
-`github.com/mateuslh/lealing/internal/...`.
+`github.com/mateuslh/lealing/internal/...` nem o módulo da engine em si. O
+SDK (`protocol`, `screen`, `component`, `machine`) vem de
+`github.com/mateuslh/lealing-sdk`, um repositório independente — nem parte
+da engine, nem deste repositório. A engine só é usada em tempo de
+desenvolvimento, como binário externo via `go run` (`make manifest`).
 
 Antes de editar:
 
@@ -17,7 +21,7 @@ Antes de editar:
 cmd/<tool>/                 executável e composição
 internal/<tool>/            domínio, adapters e model da tool
 manifests/<tool>.yaml       descoberta e permissões
-sdk importado da engine     protocol, screen e component
+SDK (github.com/mateuslh/lealing-sdk)   protocol, screen e component
 ```
 
 O ID do manifest é permanente. `summary` tem uma linha e termina com ponto.
@@ -45,6 +49,9 @@ make manifest
 ```
 
 Uma release é solicitada pelo workflow `official-tools`, com uma versão nova.
-Nunca mova ou recrie uma tag existente. A pipeline valida tudo, cria a tag no
-commit remoto e publica binários, manifest, checksums e índice somente depois
-da matriz verde.
+Nunca mova ou recrie uma tag existente. `official-tools` só chama o pipeline
+reusável `publish-tools.yml` de `github.com/mateuslh/lealing-sdk`, que
+valida tudo, cria a tag no commit remoto e publica binários, manifest,
+checksums e índice somente depois da matriz verde. A lógica de
+build/empacotamento/release não vive mais neste repositório — mudar o
+comportamento da pipeline em si é mudança no `lealing-sdk`, não aqui.

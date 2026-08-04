@@ -4,9 +4,9 @@ package tui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/mateuslh/lealing-sdk/protocol"
+	"github.com/mateuslh/lealing-sdk/screen"
 	"github.com/mateuslh/lealing-tools/internal/ui/theme"
-	"github.com/mateuslh/lealing/sdk/protocol"
-	"github.com/mateuslh/lealing/sdk/screen"
 )
 
 type Screen = screen.Model

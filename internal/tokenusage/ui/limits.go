@@ -7,8 +7,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/mateuslh/lealing-sdk/component"
 	coretokens "github.com/mateuslh/lealing-tools/internal/tokenusage/tokens"
-	"github.com/mateuslh/lealing/sdk/component"
 )
 
 // Larguras de corte do painel de limites.

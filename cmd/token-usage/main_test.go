@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mateuslh/lealing/sdk/protocol"
+	"github.com/mateuslh/lealing-sdk/protocol"
 )
 
 func TestGrantedReadUsaSomentePathEntreguePelaEngine(t *testing.T) {

@@ -3,7 +3,7 @@ package theme
 import (
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/mateuslh/lealing/sdk/protocol"
+	"github.com/mateuslh/lealing-sdk/protocol"
 )
 
 // Theme é a paleta já materializada em estilos do lipgloss.

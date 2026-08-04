@@ -1,6 +1,9 @@
 GO ?= go
 VERSION ?= 1.0.0
 ENGINE_VERSION ?= v0.4.0
+# Versão de github.com/mateuslh/lealing-sdk usada por `make marketplace`, que
+# roda o cmd/marketplace-index publicado nesse repositório independente.
+SDK_VERSION ?= v0.1.0
 BIN_DIR ?= bin
 
 TOOLS := token-usage system-info power-control claude-accounts \
@@ -37,7 +40,7 @@ manifest:
 	done
 
 marketplace:
-	$(GO) run ./cmd/marketplace-index -check
+	$(GO) run github.com/mateuslh/lealing-sdk/cmd/marketplace-index@$(SDK_VERSION) -check
 
 build: manifest
 	@mkdir -p $(BIN_DIR)

@@ -8,9 +8,8 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/ansi v0.11.6
 	github.com/lucasb-eyer/go-colorful v1.3.0
-	github.com/mateuslh/lealing v0.3.1
+	github.com/mateuslh/lealing-sdk v0.1.0
 	github.com/muesli/reflow v0.3.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
