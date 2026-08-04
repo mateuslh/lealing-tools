@@ -1,0 +1,48 @@
+{
+  "id": "json-lab",
+  "version": "1.3.0",
+  "name": "Laboratório JSON",
+  "summary": "Valide, formate ou compacte JSON com diagnóstico preciso de sintaxe.",
+  "detail": "Processa o conteúdo localmente e preserva números sem convertê-los para ponto flutuante.",
+  "category": "dev",
+  "risk": "safe",
+  "glyph": "{",
+  "permissions": {
+    "filesystem": {
+      "read": [],
+      "write": []
+    },
+    "network": false,
+    "subprocess": false
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.0/json-lab_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.0/json-lab_darwin_amd64.tar.gz",
+      "sha256": "3fa267bd233d0e60439e9c42c53394b25908b50f5041d9c66e7a337bdfb4e1a4"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.0/json-lab_darwin_arm64.tar.gz",
+      "sha256": "005f1cd5f19ce74c5ca1bc1f07044b2332e39f0b8b6cdf24d6fa489451b0c084"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.0/json-lab_windows_amd64.zip",
+      "sha256": "37f5a6e0fbfc2ef6624262091e7781e397889be43fe77090a5fcbdc7a503595c"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.0/json-lab_windows_arm64.zip",
+      "sha256": "3ed8576caa561d6d924d6c83388ba59c4bcc9e379409e004390bcde7a5240bc0"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}

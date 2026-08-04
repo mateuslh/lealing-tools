@@ -1,0 +1,48 @@
+{
+  "id": "checksum-lab",
+  "version": "1.3.0",
+  "name": "Gerador de Checksums",
+  "summary": "Gere hashes SHA-256, SHA-512 ou SHA-1 de texto sem tocar em serviços externos.",
+  "detail": "Calcula o digest do texto exatamente como digitado e sinaliza o uso legado de SHA-1.",
+  "category": "dev",
+  "risk": "safe",
+  "glyph": "#",
+  "permissions": {
+    "filesystem": {
+      "read": [],
+      "write": []
+    },
+    "network": false,
+    "subprocess": false
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.0/checksum-lab_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.0/checksum-lab_darwin_amd64.tar.gz",
+      "sha256": "ff0a5e667f823b9d1ccaff71665b44a5dbed6526285b26530691313099e61fa8"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.0/checksum-lab_darwin_arm64.tar.gz",
+      "sha256": "3eb1983d15c2abc2c6c8d69efb03117803196ce6ba5ee622e1f8dc6a26514453"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.0/checksum-lab_windows_amd64.zip",
+      "sha256": "3c81ab8b35c2192bfb42e15edfe5156e716aa313100a06edcfa247637ba2c044"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.0/checksum-lab_windows_arm64.zip",
+      "sha256": "a1cbe2c8d4c7781aeb6915f128dc1cf9f277ee91ba41009cb0bf864afa14a87d"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}
