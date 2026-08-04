@@ -1,0 +1,48 @@
+{
+  "id": "power-control",
+  "version": "1.2.0",
+  "name": "Controle de Energia",
+  "summary": "Defina quando a máquina dorme na bateria e no carregador e ajuste políticas avançadas de energia.",
+  "detail": "Usa pmset no macOS e powercfg no Windows, mostrando somente os recursos que a plataforma sabe ler e gravar.",
+  "category": "system",
+  "risk": "caution",
+  "glyph": "⏻",
+  "permissions": {
+    "filesystem": {
+      "read": [],
+      "write": []
+    },
+    "network": false,
+    "subprocess": true
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/power-control_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/power-control_darwin_amd64.tar.gz",
+      "sha256": "d1e4e67935124f715f664e409c22e571288a9ae6120ad19da035589e9ea370c7"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/power-control_darwin_arm64.tar.gz",
+      "sha256": "df3d7fecc55765d73b5e432531f435d960a7b02f39c8bd8aeb70bb76d1b25468"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/power-control_windows_amd64.zip",
+      "sha256": "4087c4d13a9715d5e8a80dd699dfdc1fcebb8b1b745474fe3b5ad2a6722a63a4"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/power-control_windows_arm64.zip",
+      "sha256": "c9f169a3c4708d8de178b13e2bfd309aaaabefcde4ea722407df228a3b023c26"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}

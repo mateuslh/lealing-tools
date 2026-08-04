@@ -1,0 +1,48 @@
+{
+  "id": "uuid-generator",
+  "version": "1.2.0",
+  "name": "Gerador de UUID",
+  "summary": "Gere lotes de UUID v4 criptograficamente aleatórios ou UUID v7 ordenáveis.",
+  "detail": "Usa crypto/rand e oferece UUID v4 aleatório ou UUID v7 ordenável por timestamp.",
+  "category": "dev",
+  "risk": "safe",
+  "glyph": "✣",
+  "permissions": {
+    "filesystem": {
+      "read": [],
+      "write": []
+    },
+    "network": false,
+    "subprocess": false
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/uuid-generator_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/uuid-generator_darwin_amd64.tar.gz",
+      "sha256": "3f494d2a04b107c1ede708643f58e26ecd7b8b792ba760f734cf532b96f1e566"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/uuid-generator_darwin_arm64.tar.gz",
+      "sha256": "e381a7306bde5d0fc3ff0b9c9adbe44df7907951eac5ebfbd8b7aa47f73eada8"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/uuid-generator_windows_amd64.zip",
+      "sha256": "e2a676e6337a0e9452ad3e33019f8a05e06151cca63cf4620b5d5af0bf88cf68"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/uuid-generator_windows_arm64.zip",
+      "sha256": "f944ea1fef86191bd429e7e7a32158a7a0dd4ce751a425a3c9785838286c0810"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}

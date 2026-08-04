@@ -1,0 +1,48 @@
+{
+  "id": "network-inspector",
+  "version": "1.2.0",
+  "name": "Inspetor DNS e TLS",
+  "summary": "Resolva DNS ou examine validade, emissor e nomes de um certificado TLS.",
+  "detail": "Resolve endereços e nomes canônicos ou abre uma conexão somente para ler o certificado apresentado.",
+  "category": "network",
+  "risk": "safe",
+  "glyph": "◎",
+  "permissions": {
+    "filesystem": {
+      "read": [],
+      "write": []
+    },
+    "network": true,
+    "subprocess": false
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/network-inspector_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/network-inspector_darwin_amd64.tar.gz",
+      "sha256": "50f85a8108acbceaecbeef4dd0fccbb8fca2678c7c43be274d49838205aa822e"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/network-inspector_darwin_arm64.tar.gz",
+      "sha256": "179d28c2bb42814aa54ce3d2e8b978c985284595907351f23f89b762924c6cf5"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/network-inspector_windows_amd64.zip",
+      "sha256": "348a02e1d4f904a479e19e6980407a1abf077ff1b192e8545aaf1e9c6e172a7c"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/network-inspector_windows_arm64.zip",
+      "sha256": "f7d06d979191b2143a9e669c6a761543809573c6b9e1c434ce1929e6eb2d4c54"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}

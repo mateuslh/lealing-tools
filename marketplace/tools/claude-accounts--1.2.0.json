@@ -1,0 +1,56 @@
+{
+  "id": "claude-accounts",
+  "version": "1.2.0",
+  "name": "Contas do Claude Code",
+  "summary": "Guarde sessões de várias contas do Claude Code e alterne explicitamente entre elas.",
+  "detail": "Mantém perfis no diretório privado da tool e alterna login, tokens, API keys e apiKeyHelper usados pela CLI do Claude Code.",
+  "category": "ai",
+  "risk": "caution",
+  "glyph": "⇆",
+  "permissions": {
+    "filesystem": {
+      "read": [
+        "~/.claude/.credentials.json",
+        "~/.claude/settings.json",
+        "~/.claude.json"
+      ],
+      "write": [
+        "~/.claude/.credentials.json",
+        "~/.claude/settings.json",
+        "~/.claude.json"
+      ]
+    },
+    "network": false,
+    "subprocess": true
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/claude-accounts_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/claude-accounts_darwin_amd64.tar.gz",
+      "sha256": "a5d52632a4c86613ced819f32d45af8d33e47648f688c789c0293d0510127a16"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/claude-accounts_darwin_arm64.tar.gz",
+      "sha256": "6959c883dc930cfdf2d0eaeacc0ab104c9d2ac2104a4e98a45d00fe5d235da72"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/claude-accounts_windows_amd64.zip",
+      "sha256": "99b927294c2abeeec33fe2e6278f7a11755400f57bdf02649f4de023832a15a6"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/claude-accounts_windows_arm64.zip",
+      "sha256": "60e334806dba784fd111b3c43298b8becfe4390b08f2525bb5be705207b70007"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}

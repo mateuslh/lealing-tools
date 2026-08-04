@@ -1,0 +1,48 @@
+{
+  "id": "system-info",
+  "version": "1.2.0",
+  "name": "Informações do Sistema",
+  "summary": "Veja versão do sistema, chip, memória, tempo ligado e estado da bateria.",
+  "detail": "Consulta informações nativas da máquina sem enviar dados para serviços externos.",
+  "category": "system",
+  "risk": "safe",
+  "glyph": "◎",
+  "permissions": {
+    "filesystem": {
+      "read": [],
+      "write": []
+    },
+    "network": false,
+    "subprocess": true
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/system-info_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/system-info_darwin_amd64.tar.gz",
+      "sha256": "86cce4162bf158f577a45d3251a5af6a7d723f609b756f9a31fd6c61108f876f"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/system-info_darwin_arm64.tar.gz",
+      "sha256": "ca41712ce2f094d376a00fda0b7a7a94a2e8bff1d30092d10d3758fa11443fd5"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/system-info_windows_amd64.zip",
+      "sha256": "fd8fd9dcf4547ce599158f7a2643560c0c92c42324275850aa16124ad1225492"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.2.0/system-info_windows_arm64.zip",
+      "sha256": "9fcdbd2d388f1a298d8491688328c5408327e2f7f4fb00859ede88c71498424a"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}
