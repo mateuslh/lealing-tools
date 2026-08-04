@@ -10,9 +10,11 @@
 package ccaccount
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 	"unicode"
@@ -22,8 +24,9 @@ import (
 // partir deles — de "pedir confirmação" a "mandar rodar `claude`".
 var (
 	ErrNoActiveSession = errors.New("nenhuma sessão ativa do Claude Code — rode `claude` e faça login")
+	ErrNoDirectAuth    = errors.New("nenhuma autenticação direta configurada")
 	ErrProfileNotFound = errors.New("perfil não encontrado")
-	ErrProfileExists   = errors.New("já existe um perfil com esse nome, de outra conta")
+	ErrProfileExists   = errors.New("já existe um perfil com esse nome, de outra conta ou autenticação")
 	ErrActiveUnsaved   = errors.New("a sessão ativa não está guardada em nenhum perfil")
 	ErrEmptyProfile    = errors.New("o perfil guardado não tem credencial")
 	ErrInvalidName     = errors.New("nome inválido: letras, números, espaço, hífen, ponto ou sublinhado, até 40 caracteres")
@@ -33,9 +36,44 @@ var (
 // cofre da plataforma, então é curto de propósito.
 const NameLimit = 40
 
+// AuthMethod identifica de onde o Claude Code obtém a credencial efetiva.
+// O valor vazio é deliberadamente o login tradicional, mantendo compatíveis
+// os perfis gravados antes de existirem outros métodos.
+type AuthMethod string
+
+const (
+	AuthClaudeLogin AuthMethod = ""
+	AuthOAuthToken  AuthMethod = "claude_code_oauth_token"
+	AuthAPIKey      AuthMethod = "anthropic_api_key"
+	AuthBearerToken AuthMethod = "anthropic_auth_token"
+	AuthAPIHelper   AuthMethod = "api_key_helper"
+)
+
+// Label é a descrição segura do método; nunca contém o valor secreto.
+func (m AuthMethod) Label() string {
+	switch m {
+	case AuthOAuthToken:
+		return "token OAuth"
+	case AuthAPIKey:
+		return "API key"
+	case AuthBearerToken:
+		return "token Bearer"
+	case AuthAPIHelper:
+		return "apiKeyHelper"
+	default:
+		return "login do Claude"
+	}
+}
+
 // Session é o estado completo de uma conta: o que a CLI precisa encontrar
 // para se considerar logada.
 type Session struct {
+	// Method vazio representa o login persistido pela própria CLI. Nos
+	// demais métodos, AuthValue é o token, a chave ou o comando do helper.
+	Method    AuthMethod
+	AuthValue string
+	// Origin só descreve a fonte ativa na tela; nunca é persistida no perfil.
+	Origin string
 	// Credential é o JSON cru que o Claude Code guarda no cofre. Guardamos
 	// o blob inteiro, e não os campos que sabemos ler, porque ele carrega o
 	// refresh token — sem ele a sessão restaurada morreria em uma hora.
@@ -47,7 +85,12 @@ type Session struct {
 }
 
 // Valid informa se a sessão tem o mínimo para ser restaurada.
-func (s Session) Valid() bool { return len(s.Credential) > 0 }
+func (s Session) Valid() bool {
+	if s.Method == AuthClaudeLogin {
+		return len(s.Credential) > 0
+	}
+	return s.AuthValue != ""
+}
 
 // Identity são os campos legíveis de uma conta, extraídos da sessão.
 type Identity struct {
@@ -111,6 +154,7 @@ func (i Identity) SameAccount(other Identity) bool {
 // Profile é uma sessão guardada sob um nome.
 type Profile struct {
 	Name     string
+	Method   AuthMethod
 	Identity Identity
 	SavedAt  time.Time
 }
@@ -129,6 +173,13 @@ type Vault interface {
 type Config interface {
 	Account(ctx context.Context) (account json.RawMessage, userID string, err error)
 	SetAccount(ctx context.Context, account json.RawMessage, userID string) error
+}
+
+// DirectAuth lê e aplica as autenticações que o Claude Code recebe pelo
+// bloco env ou por apiKeyHelper no settings.json.
+type DirectAuth interface {
+	Read(ctx context.Context) (method AuthMethod, value, origin string, err error)
+	Apply(ctx context.Context, method AuthMethod, value string) error
 }
 
 // Store é onde o lealing guarda os perfis.
@@ -159,7 +210,15 @@ type Manager struct {
 	vault  Vault
 	config Config
 	store  Store
+	direct DirectAuth
 	now    func() time.Time
+}
+
+// WithDirectAuth habilita tokens, API keys e apiKeyHelper preservando o
+// construtor compatível com integrações que só conhecem o login tradicional.
+func (m *Manager) WithDirectAuth(direct DirectAuth) *Manager {
+	m.direct = direct
+	return m
 }
 
 var _ Switcher = (*Manager)(nil)
@@ -180,6 +239,7 @@ type State struct {
 	// ActiveProfile é o nome do perfil que corresponde à sessão ativa, ou
 	// vazio se ela não está guardada em lugar nenhum.
 	ActiveProfile string
+	Method        AuthMethod
 	// Origin é onde a credencial ativa mora, para a tela dizer ao usuário.
 	Origin   string
 	Profiles []Profile
@@ -196,8 +256,6 @@ func (m *Manager) State(ctx context.Context) (State, error) {
 	st := State{Profiles: profiles}
 
 	session, err := m.Current(ctx)
-	// Origin só é confiável depois da leitura: é ela que descobre em qual
-	// das fontes possíveis a sessão está.
 	st.Origin = m.vault.Origin()
 	if errors.Is(err, ErrNoActiveSession) {
 		return st, nil
@@ -208,14 +266,33 @@ func (m *Manager) State(ctx context.Context) (State, error) {
 
 	st.Active = Describe(session)
 	st.HasActive = true
-	if p, ok := matchProfile(profiles, st.Active); ok {
-		st.ActiveProfile = p.Name
+	st.Method = session.Method
+	if session.Origin != "" {
+		st.Origin = session.Origin
+	}
+	if idx, ok := m.activeProfile(ctx, profiles, session); ok {
+		profile, err := m.syncProfile(ctx, profiles[idx], session)
+		if err != nil {
+			return st, fmt.Errorf("atualizar a credencial rotacionada do perfil ativo: %w", err)
+		}
+		st.Profiles[idx] = profile
+		st.Active = mergeIdentity(profile.Identity, st.Active)
+		st.ActiveProfile = profile.Name
 	}
 	return st, nil
 }
 
 // Current lê a sessão ativa juntando cofre e configuração.
 func (m *Manager) Current(ctx context.Context) (Session, error) {
+	if m.direct != nil {
+		method, value, origin, err := m.direct.Read(ctx)
+		if err == nil {
+			return Session{Method: method, AuthValue: value, Origin: origin}, nil
+		}
+		if !errors.Is(err, ErrNoDirectAuth) {
+			return Session{}, err
+		}
+	}
 	cred, err := m.vault.Read(ctx)
 	if err != nil || len(cred) == 0 {
 		return Session{}, ErrNoActiveSession
@@ -258,13 +335,16 @@ func (m *Manager) save(ctx context.Context, name string, force bool) (Profile, e
 			return Profile{}, err
 		}
 		for _, p := range existing {
-			if strings.EqualFold(p.Name, clean) && !p.Identity.SameAccount(identity) {
-				return Profile{}, ErrProfileExists
+			if strings.EqualFold(p.Name, clean) {
+				saved, loadErr := m.store.Load(ctx, p.Name)
+				if loadErr != nil || !sameSession(saved, session) && !p.Identity.SameAccount(identity) {
+					return Profile{}, ErrProfileExists
+				}
 			}
 		}
 	}
 
-	profile := Profile{Name: clean, Identity: identity, SavedAt: m.now()}
+	profile := Profile{Name: clean, Method: session.Method, Identity: identity, SavedAt: m.now()}
 	if err := m.store.Save(ctx, profile, session); err != nil {
 		return Profile{}, err
 	}
@@ -295,6 +375,28 @@ func (m *Manager) activate(ctx context.Context, name string, force bool) error {
 		return ErrProfileNotFound
 	}
 
+	current, currentErr := m.Current(ctx)
+	hasCurrent := currentErr == nil
+	if hasCurrent {
+		if idx, saved := m.activeProfile(ctx, profiles, current); saved {
+			// O Claude Code rotaciona o refresh token enquanto a conta está
+			// em uso. Persistir a sessão mais recente imediatamente antes da
+			// troca impede que voltar ao perfil restaure um token revogado.
+			updated, err := m.syncProfile(ctx, profiles[idx], current)
+			if err != nil {
+				return fmt.Errorf("preservar a sessão atual antes da troca: %w", err)
+			}
+			profiles[idx] = updated
+			if strings.EqualFold(updated.Name, target.Name) {
+				return nil
+			}
+		} else if !force {
+			return ErrActiveUnsaved
+		}
+	}
+
+	// Carregar depois de sincronizar é importante quando o alvo é também o
+	// perfil ativo: a versão antiga pode conter um refresh token já rotacionado.
 	session, err := m.store.Load(ctx, target.Name)
 	if err != nil {
 		return err
@@ -303,28 +405,181 @@ func (m *Manager) activate(ctx context.Context, name string, force bool) error {
 		return ErrEmptyProfile
 	}
 
-	if !force {
-		if current, err := m.Current(ctx); err == nil {
-			active := Describe(current)
-			if _, saved := matchProfile(profiles, active); !saved {
-				return ErrActiveUnsaved
-			}
-		}
+	if err := m.install(ctx, session); err != nil {
+		return m.activationFailure(ctx, current, hasCurrent,
+			fmt.Errorf("aplicar a autenticação do perfil: %w", err))
 	}
 
-	// O cofre vem primeiro: se a identidade falhar depois dele, a CLI fica
-	// autenticada na conta certa mostrando o nome antigo — feio, mas
-	// funcional. Na ordem inversa ficaria o contrário, que confunde de
-	// verdade.
-	if err := m.vault.Write(ctx, session.Credential); err != nil {
-		return err
+	// Não confie apenas no sucesso das escritas. Cofres de sistema podem
+	// aceitar a operação e devolver outro item; reler fecha esse caso antes
+	// de anunciar na UI que a troca terminou.
+	installed, err := m.Current(ctx)
+	if err != nil {
+		return m.activationFailure(ctx, current, hasCurrent,
+			fmt.Errorf("conferir a sessão depois da troca: %w", err))
 	}
-	if len(session.Account) > 0 {
-		if err := m.config.SetAccount(ctx, session.Account, session.UserID); err != nil {
-			return err
+	if !sameSession(installed, session) {
+		return m.activationFailure(ctx, current, hasCurrent,
+			errors.New("a sessão conferida depois da troca difere do perfil escolhido"))
+	}
+	return nil
+}
+
+// install aplica uma sessão respeitando a precedência do Claude Code. Métodos
+// diretos apenas precisam entrar no settings.json; o login tradicional é
+// preparado no cofre antes de desabilitar variáveis que poderiam ocultá-lo.
+func (m *Manager) install(ctx context.Context, session Session) error {
+	if session.Method != AuthClaudeLogin {
+		if m.direct == nil {
+			return errors.New("esta instalação da tool não oferece autenticação direta")
+		}
+		return m.direct.Apply(ctx, session.Method, session.AuthValue)
+	}
+	if err := m.vault.Write(ctx, session.Credential); err != nil {
+		return fmt.Errorf("gravar a credencial do login: %w", err)
+	}
+	if err := m.config.SetAccount(ctx, session.Account, session.UserID); err != nil {
+		return fmt.Errorf("gravar a identidade do login: %w", err)
+	}
+	if m.direct != nil {
+		if err := m.direct.Apply(ctx, AuthClaudeLogin, ""); err != nil {
+			return fmt.Errorf("desabilitar autenticação direta: %w", err)
 		}
 	}
 	return nil
+}
+
+// activationFailure tenta devolver a conta anterior ao lugar quando uma
+// troca parcial falha. Sem sessão anterior não há credencial que possa ser
+// reconstruída, então o erro original é preservado.
+func (m *Manager) activationFailure(ctx context.Context, previous Session, hadPrevious bool, cause error) error {
+	if !hadPrevious {
+		return cause
+	}
+	// O contexto da operação pode ter vencido justamente depois de uma
+	// escrita parcial. A restauração ganha uma janela própria e curta; usar o
+	// contexto já cancelado faria o rollback falhar antes de começar.
+	rollbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	if rollbackErr := m.install(rollbackCtx, previous); rollbackErr != nil {
+		return errors.Join(cause, fmt.Errorf("também não foi possível restaurar a sessão anterior: %w", rollbackErr))
+	}
+	return cause
+}
+
+// activeProfile encontra qual perfil cobre a sessão atual. A credencial exata
+// vem primeiro: no Windows, especialmente em logins feitos pela extensão, o
+// oauthAccount do ~/.claude.json pode continuar descrevendo a conta anterior.
+// Depois que o token rotaciona, a identidade entra como reserva, mas somente
+// quando aponta sem ambiguidade para um único perfil.
+func (m *Manager) activeProfile(ctx context.Context, profiles []Profile, session Session) (int, bool) {
+	for idx := range profiles {
+		saved, err := m.store.Load(ctx, profiles[idx].Name)
+		if err == nil && sameAuth(saved, session) {
+			return idx, true
+		}
+	}
+
+	id := Describe(session)
+	if id.AccountUUID == "" && id.Email == "" {
+		return 0, false
+	}
+	match, matches := 0, 0
+	for idx, profile := range profiles {
+		if profile.Identity.SameAccount(id) {
+			match, matches = idx, matches+1
+		}
+	}
+	return match, matches == 1
+}
+
+// syncProfile atualiza silenciosamente a fotografia da conta ativa quando o
+// Claude Code rotacionou seus tokens. Sem isso, sair e voltar ao perfil
+// restaura um refresh token que o servidor já revogou.
+func (m *Manager) syncProfile(ctx context.Context, profile Profile, current Session) (Profile, error) {
+	saved, err := m.store.Load(ctx, profile.Name)
+	if err != nil {
+		return Profile{}, err
+	}
+	// A extensão no Windows pode trocar a credencial sem atualizar (ou até
+	// sem criar) oauthAccount. Quando a credencial identifica exatamente o
+	// perfil, não deixe essa identidade ausente/antiga contaminar a cópia boa
+	// que já estava guardada.
+	expected := mergeIdentity(profile.Identity, Describe(saved))
+	observed := Describe(current)
+	if expected.AccountUUID != "" || expected.Email != "" {
+		if observed.AccountUUID == "" && observed.Email == "" || !expected.SameAccount(observed) {
+			current.Account = saved.Account
+			current.UserID = saved.UserID
+		}
+	}
+	if sameSession(saved, current) {
+		return profile, nil
+	}
+	profile.Identity = mergeIdentity(profile.Identity, Describe(current))
+	profile.SavedAt = m.now()
+	if err := m.store.Save(ctx, profile, current); err != nil {
+		return Profile{}, err
+	}
+	return profile, nil
+}
+
+func sameSession(a, b Session) bool {
+	if !sameAuth(a, b) {
+		return false
+	}
+	if a.Method != AuthClaudeLogin {
+		return true
+	}
+	return sameJSON(a.Account, b.Account) && a.UserID == b.UserID
+}
+
+func sameAuth(a, b Session) bool {
+	if a.Method != b.Method {
+		return false
+	}
+	if a.Method != AuthClaudeLogin {
+		return a.AuthValue == b.AuthValue
+	}
+	return sameJSON(a.Credential, b.Credential)
+}
+
+func sameJSON(a, b json.RawMessage) bool {
+	if len(a) == 0 || len(b) == 0 {
+		return len(a) == len(b)
+	}
+	var compactA, compactB bytes.Buffer
+	if json.Compact(&compactA, a) != nil || json.Compact(&compactB, b) != nil {
+		return bytes.Equal(a, b)
+	}
+	return bytes.Equal(compactA.Bytes(), compactB.Bytes())
+}
+
+// mergeIdentity conserva metadados que uma leitura parcial do arquivo da
+// CLI não trouxe e substitui somente os campos efetivamente observados.
+func mergeIdentity(old, fresh Identity) Identity {
+	if fresh.Email != "" {
+		old.Email = fresh.Email
+	}
+	if fresh.DisplayName != "" {
+		old.DisplayName = fresh.DisplayName
+	}
+	if fresh.Organization != "" {
+		old.Organization = fresh.Organization
+	}
+	if fresh.AccountUUID != "" {
+		old.AccountUUID = fresh.AccountUUID
+	}
+	if fresh.Plan != "" {
+		old.Plan = fresh.Plan
+	}
+	if !fresh.ExpiresAt.IsZero() {
+		old.ExpiresAt = fresh.ExpiresAt
+	}
+	if !fresh.RenewsUntil.IsZero() {
+		old.RenewsUntil = fresh.RenewsUntil
+	}
+	return old
 }
 
 // Forget apaga um perfil. A sessão ativa não é tocada: esquecer o perfil da
@@ -378,6 +633,9 @@ func AllowedInName(r rune) bool {
 // Blob ilegível vira campo vazio, nunca erro: uma tela que se recusa a abrir
 // porque a CLI renomeou um campo é pior que uma tela com um traço.
 func Describe(s Session) Identity {
+	if s.Method != AuthClaudeLogin {
+		return Identity{DisplayName: s.Method.Label()}
+	}
 	var id Identity
 
 	var cred struct {

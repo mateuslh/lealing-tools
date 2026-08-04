@@ -116,6 +116,39 @@ func TestConfigCriaArquivoQuandoNaoExiste(t *testing.T) {
 	}
 }
 
+func TestConfigRemoveIdentidadeAusenteEmVezDeMisturarContas(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "claude.json")
+	if err := os.WriteFile(path, []byte(`{
+  "oauthAccount": {"emailAddress": "antiga@exemplo.com"},
+  "userID": "user-antigo",
+  "projects": {"/tmp/projeto": {}}
+}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &ConfigFile{Path: path}
+	if err := cfg.SetAccount(context.Background(), nil, ""); err != nil {
+		t.Fatalf("SetAccount: %v", err)
+	}
+	account, userID, err := cfg.Account(context.Background())
+	if err != nil {
+		t.Fatalf("Account: %v", err)
+	}
+	if len(account) != 0 || userID != "" {
+		t.Errorf("identidade antiga sobreviveu: account=%s userID=%q", account, userID)
+	}
+
+	var doc map[string]json.RawMessage
+	raw, _ := os.ReadFile(path)
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := doc["projects"]; !ok {
+		t.Error("limpar a identidade apagou dados não relacionados")
+	}
+}
+
 func TestFileVaultGuardaSomenteParaODono(t *testing.T) {
 	dir := t.TempDir()
 	vault := &FileVault{Path: filepath.Join(dir, ".claude", ".credentials.json")}
@@ -226,5 +259,27 @@ func TestStoreVazioNaoEhErro(t *testing.T) {
 	}
 	if len(profiles) != 0 {
 		t.Errorf("índice inexistente devia listar vazio, veio %+v", profiles)
+	}
+}
+
+func TestStoreNaoExpoeTokenDiretoNoIndice(t *testing.T) {
+	dir := t.TempDir()
+	index := filepath.Join(dir, "claude-accounts.json")
+	secrets := newMemSecrets()
+	store := newStore(index, secrets)
+	ctx := context.Background()
+	profile := ccaccount.Profile{Name: "api", Method: ccaccount.AuthAPIKey, SavedAt: time.Now()}
+	session := ccaccount.Session{Method: ccaccount.AuthAPIKey, AuthValue: "sk-ant-api03-super-segredo"}
+
+	if err := store.Save(ctx, profile, session); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(index)
+	if strings.Contains(string(raw), session.AuthValue) {
+		t.Fatal("API key vazou para o índice legível")
+	}
+	loaded, err := store.Load(ctx, "api")
+	if err != nil || loaded.Method != session.Method || loaded.AuthValue != session.AuthValue {
+		t.Fatalf("sessão direta voltou diferente: %+v (%v)", loaded, err)
 	}
 }

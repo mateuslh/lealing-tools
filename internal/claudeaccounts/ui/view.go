@@ -83,6 +83,7 @@ func (m *Model) activeRows(th *theme.Theme) []component.Row {
 
 	rows := []component.Row{
 		{Label: "Conta", Value: id.Label()},
+		{Label: "Autenticação", Value: m.state.Method.Label()},
 	}
 	if id.Organization != "" {
 		rows = append(rows, component.Row{Label: "Organização", Value: id.Organization})
@@ -121,7 +122,7 @@ func (m *Model) activeProfileText() string {
 	if m.state.ActiveProfile != "" {
 		return "“" + m.state.ActiveProfile + "”"
 	}
-	return "não guardada — “s” salva esta sessão"
+	return "não guardada — “s” salva esta autenticação"
 }
 
 func (m *Model) activeProfileTone(th *theme.Theme) lipgloss.TerminalColor {
@@ -138,7 +139,7 @@ func (m *Model) viewActiveLine(th *theme.Theme, width int) string {
 	}
 	id := m.state.Active
 	left := th.Strong.Render("✦ " + id.Label())
-	right := th.Dim.Render(strings.TrimSpace(id.Plan + " " + m.activeProfileText()))
+	right := th.Dim.Render(strings.TrimSpace(m.state.Method.Label() + " " + id.Plan + " " + m.activeProfileText()))
 	return component.Spread(left, right, width)
 }
 
@@ -154,7 +155,7 @@ func (m *Model) viewProfiles(th *theme.Theme, width, height int) string {
 		// Os dois espaços alinham o texto com a coluna do cursor das linhas
 		// de perfil, para a moldura não parecer torta quando a lista enche.
 		content = th.Ghost.Render(component.TruncateTail(
-			"  nenhum perfil guardado · “s” salva a sessão atual", width-4))
+			"  nenhum perfil guardado · “s” salva a autenticação atual", width-4))
 	} else {
 		content = m.profileLines(th, width-4, rows)
 	}
@@ -229,6 +230,9 @@ func (m *Model) profileLine(th *theme.Theme, p core.Profile, selected bool, widt
 // profileMeta é a coluna da direita: plano e quando o perfil foi salvo.
 func (m *Model) profileMeta(p core.Profile) string {
 	parts := make([]string, 0, 2)
+	if p.Method != core.AuthClaudeLogin {
+		parts = append(parts, p.Method.Label())
+	}
 	if p.Identity.Plan != "" {
 		parts = append(parts, p.Identity.Plan)
 	}

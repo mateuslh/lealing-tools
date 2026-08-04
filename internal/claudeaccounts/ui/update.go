@@ -57,7 +57,7 @@ func (m *Model) handleAction(msg actionMsg) tea.Cmd {
 	// pode responder, e que o núcleo se recusa a responder sozinho.
 	case errors.Is(msg.err, core.ErrProfileExists):
 		return m.ask(intentOverwriteProfile, msg.name,
-			"“"+msg.name+"” já guarda outra conta. Substituir?")
+			"“"+msg.name+"” já guarda outra conta ou autenticação. Substituir?")
 
 	case errors.Is(msg.err, core.ErrActiveUnsaved):
 		return m.ask(intentActivateUnsaved, msg.name,
@@ -108,7 +108,7 @@ func (m *Model) keyList(msg tea.KeyMsg) tea.Cmd {
 	case "enter":
 		profile, ok := m.selected()
 		if !ok {
-			m.status = status{"nenhum perfil guardado ainda — use “s” para salvar a sessão atual", toneWarn}
+			m.status = status{"nenhum perfil guardado ainda — use “s” para salvar a autenticação atual", toneWarn}
 			return nil
 		}
 		if profile.Name == m.state.ActiveProfile {

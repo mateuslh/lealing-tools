@@ -142,6 +142,24 @@ func TestListaMostraOsPerfisEMarcaOAtivo(t *testing.T) {
 	}
 }
 
+func TestTelaMostraMetodoDiretoSemReceberOSegredo(t *testing.T) {
+	state := core.State{
+		Active: core.Identity{DisplayName: "API key"}, HasActive: true,
+		ActiveProfile: "empresa", Method: core.AuthAPIKey, Origin: "settings.json",
+		Profiles: []core.Profile{{
+			Name: "empresa", Method: core.AuthAPIKey,
+			Identity: core.Identity{DisplayName: "API key"}, SavedAt: now(),
+		}},
+	}
+	s := open(t, &spy{state: state})
+	out := stripANSI(s.View(tui.Frame{Width: 100, Height: 30}))
+	for _, want := range []string{"empresa", "API key", "settings.json"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("a tela não mostra %q:\n%s", want, out)
+		}
+	}
+}
+
 func TestEnterAtivaOPerfilSobOCursor(t *testing.T) {
 	sp := &spy{state: fixture()}
 	press(t, open(t, sp), "down", "enter")

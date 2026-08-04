@@ -1,6 +1,6 @@
 apiVersion: lealing.dev/v1
 id: system-info
-version: 1.1.0
+version: 1.2.0
 name: Informações do Sistema
 summary: Veja versão do sistema, chip, memória, tempo ligado e estado da bateria.
 detail: Consulta informações nativas da máquina sem enviar dados para serviços externos.

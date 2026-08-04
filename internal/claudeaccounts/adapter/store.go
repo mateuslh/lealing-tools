@@ -60,6 +60,7 @@ type indexFile struct {
 // impede que renomear um campo do domínio invalide os perfis já gravados.
 type profileRecord struct {
 	Name         string    `json:"name"`
+	AuthMethod   string    `json:"auth_method,omitempty"`
 	Email        string    `json:"email,omitempty"`
 	DisplayName  string    `json:"display_name,omitempty"`
 	Organization string    `json:"organization,omitempty"`
@@ -72,12 +73,14 @@ type profileRecord struct {
 
 // sessionRecord é a credencial serializada dentro do cofre.
 type sessionRecord struct {
-	Credential json.RawMessage `json:"credential"`
-	Account    json.RawMessage `json:"account,omitempty"`
-	UserID     string          `json:"user_id,omitempty"`
+	AuthMethod ccaccount.AuthMethod `json:"auth_method,omitempty"`
+	AuthValue  string               `json:"auth_value,omitempty"`
+	Credential json.RawMessage      `json:"credential"`
+	Account    json.RawMessage      `json:"account,omitempty"`
+	UserID     string               `json:"user_id,omitempty"`
 }
 
-const indexVersion = 1
+const indexVersion = 2
 
 // --- Porta -------------------------------------------------------------
 
@@ -110,6 +113,8 @@ func (s *Store) Load(ctx context.Context, name string) (ccaccount.Session, error
 		return ccaccount.Session{}, ccaccount.ErrEmptyProfile
 	}
 	return ccaccount.Session{
+		Method:     rec.AuthMethod,
+		AuthValue:  rec.AuthValue,
 		Credential: rec.Credential,
 		Account:    rec.Account,
 		UserID:     rec.UserID,
@@ -123,6 +128,8 @@ func (s *Store) Load(ctx context.Context, name string) (ccaccount.Session, error
 // um perfil listado e vazio, que só se descobre na hora de ativar.
 func (s *Store) Save(ctx context.Context, profile ccaccount.Profile, session ccaccount.Session) error {
 	payload, err := json.Marshal(sessionRecord{
+		AuthMethod: session.Method,
+		AuthValue:  session.AuthValue,
 		Credential: session.Credential,
 		Account:    session.Account,
 		UserID:     session.UserID,
@@ -227,6 +234,7 @@ func (s *Store) write(idx indexFile) error {
 func (r profileRecord) toDomain() ccaccount.Profile {
 	return ccaccount.Profile{
 		Name:    r.Name,
+		Method:  ccaccount.AuthMethod(r.AuthMethod),
 		SavedAt: r.SavedAt,
 		Identity: ccaccount.Identity{
 			Email:        r.Email,
@@ -243,6 +251,7 @@ func (r profileRecord) toDomain() ccaccount.Profile {
 func fromDomain(p ccaccount.Profile) profileRecord {
 	return profileRecord{
 		Name:         p.Name,
+		AuthMethod:   string(p.Method),
 		Email:        p.Identity.Email,
 		DisplayName:  p.Identity.DisplayName,
 		Organization: p.Identity.Organization,

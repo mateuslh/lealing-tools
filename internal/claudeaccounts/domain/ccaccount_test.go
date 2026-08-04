@@ -37,8 +37,10 @@ func account(email, org, uuid string) json.RawMessage {
 // --- Duplos ------------------------------------------------------------
 
 type fakeVault struct {
-	cred json.RawMessage
-	err  error
+	cred           json.RawMessage
+	err            error
+	writeErr       error
+	failAfterWrite bool
 }
 
 func (f *fakeVault) Read(context.Context) (json.RawMessage, error) {
@@ -51,12 +53,51 @@ func (f *fakeVault) Read(context.Context) (json.RawMessage, error) {
 	return f.cred, nil
 }
 
-func (f *fakeVault) Write(_ context.Context, c json.RawMessage) error { f.cred = c; return nil }
-func (f *fakeVault) Origin() string                                   { return "cofre de teste" }
+func (f *fakeVault) Write(_ context.Context, c json.RawMessage) error {
+	err := f.writeErr
+	f.writeErr = nil
+	if err == nil || f.failAfterWrite {
+		f.cred = c
+	}
+	return err
+}
+func (f *fakeVault) Origin() string { return "cofre de teste" }
 
 type fakeConfig struct {
 	account json.RawMessage
 	userID  string
+	setErr  error
+}
+
+type fakeDirectAuth struct {
+	method         ccaccount.AuthMethod
+	value          string
+	origin         string
+	err            error
+	applyErr       error
+	failAfterApply bool
+}
+
+func (f *fakeDirectAuth) Read(context.Context) (ccaccount.AuthMethod, string, string, error) {
+	if f.err != nil {
+		return ccaccount.AuthClaudeLogin, "", "", f.err
+	}
+	if f.method == ccaccount.AuthClaudeLogin {
+		return ccaccount.AuthClaudeLogin, "", "", ccaccount.ErrNoDirectAuth
+	}
+	return f.method, f.value, f.origin, nil
+}
+
+func (f *fakeDirectAuth) Apply(_ context.Context, method ccaccount.AuthMethod, value string) error {
+	err := f.applyErr
+	f.applyErr = nil
+	if err == nil || f.failAfterApply {
+		f.method, f.value = method, value
+		if method == ccaccount.AuthClaudeLogin {
+			f.value = ""
+		}
+	}
+	return err
 }
 
 func (f *fakeConfig) Account(context.Context) (json.RawMessage, string, error) {
@@ -64,6 +105,11 @@ func (f *fakeConfig) Account(context.Context) (json.RawMessage, string, error) {
 }
 
 func (f *fakeConfig) SetAccount(_ context.Context, a json.RawMessage, id string) error {
+	if f.setErr != nil {
+		err := f.setErr
+		f.setErr = nil
+		return err
+	}
 	f.account, f.userID = a, id
 	return nil
 }
@@ -239,10 +285,285 @@ func TestAtivarRestauraCredencialEIdentidade(t *testing.T) {
 	}
 }
 
+func TestEstadoAtualizaTokenRotacionadoDoPerfilAtivo(t *testing.T) {
+	m, vault, _, store := setup(t)
+	ctx := context.Background()
+
+	if _, err := m.Save(ctx, "pessoal"); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	rotated := credential("pro", now().Add(6*time.Hour), now().AddDate(0, 1, 0))
+	vault.cred = rotated
+
+	st, err := m.State(ctx)
+	if err != nil {
+		t.Fatalf("State: %v", err)
+	}
+	if st.ActiveProfile != "pessoal" {
+		t.Fatalf("perfil ativo = %q", st.ActiveProfile)
+	}
+	if got := store.sessions["pessoal"].Credential; string(got) != string(rotated) {
+		t.Error("o perfil continuou com o refresh token anterior à rotação")
+	}
+	if !st.Profiles[0].Identity.ExpiresAt.Equal(now().Add(6 * time.Hour)) {
+		t.Errorf("metadados do perfil não acompanharam a rotação: %+v", st.Profiles[0].Identity)
+	}
+}
+
+func TestAtivarPreservaTokenRotacionadoMesmoSemRecarregarTela(t *testing.T) {
+	m, vault, config, store := setup(t)
+	ctx := context.Background()
+
+	if _, err := m.Save(ctx, "pessoal"); err != nil {
+		t.Fatalf("Save pessoal: %v", err)
+	}
+
+	workSession := ccaccount.Session{
+		Credential: credential("max", now().Add(2*time.Hour), now().AddDate(0, 1, 0)),
+		Account:    account("eu@empresa.com", "Empresa", "uuid-empresa"),
+		UserID:     "user-empresa",
+	}
+	workProfile := ccaccount.Profile{
+		Name: "trabalho", Identity: ccaccount.Describe(workSession), SavedAt: now(),
+	}
+	if err := store.Save(ctx, workProfile, workSession); err != nil {
+		t.Fatal(err)
+	}
+
+	rotated := credential("pro", now().Add(8*time.Hour), now().AddDate(0, 2, 0))
+	vault.cred = rotated
+	if err := m.Activate(ctx, "trabalho"); err != nil {
+		t.Fatalf("Activate trabalho: %v", err)
+	}
+	if config.userID != "user-empresa" {
+		t.Fatalf("trabalho não foi ativado: %q", config.userID)
+	}
+	if err := m.Activate(ctx, "pessoal"); err != nil {
+		t.Fatalf("Activate pessoal: %v", err)
+	}
+	if string(vault.cred) != string(rotated) {
+		t.Error("voltar ao perfil restaurou o refresh token revogado")
+	}
+}
+
+func TestTrocaNoWindowsMarcaCredencialMesmoComIdentidadeAntiga(t *testing.T) {
+	m, _, config, store := setup(t)
+	ctx := context.Background()
+
+	if _, err := m.Save(ctx, "pessoal"); err != nil {
+		t.Fatalf("Save pessoal: %v", err)
+	}
+	// A extensão do Claude pode trocar a credencial sem atualizar o
+	// oauthAccount. Os dois perfis ficam com a mesma identidade aparente,
+	// mas suas credenciais continuam sendo inequivocamente diferentes.
+	workSession := ccaccount.Session{
+		Credential: credential("max", now().Add(2*time.Hour), now().AddDate(0, 1, 0)),
+		Account:    append(json.RawMessage(nil), config.account...),
+		UserID:     config.userID,
+	}
+	if err := store.Save(ctx, ccaccount.Profile{
+		Name: "trabalho", Identity: ccaccount.Describe(workSession), SavedAt: now(),
+	}, workSession); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := m.Activate(ctx, "trabalho"); err != nil {
+		t.Fatalf("Activate: %v", err)
+	}
+	st, err := m.State(ctx)
+	if err != nil {
+		t.Fatalf("State: %v", err)
+	}
+	if st.ActiveProfile != "trabalho" {
+		t.Errorf("perfil verde = %q, queria trabalho", st.ActiveProfile)
+	}
+}
+
+func TestEstadoNaoContaminaPerfilComIdentidadeAntigaDoWindows(t *testing.T) {
+	m, vault, _, store := setup(t)
+	ctx := context.Background()
+
+	workSession := ccaccount.Session{
+		Credential: credential("max", now().Add(2*time.Hour), now().AddDate(0, 1, 0)),
+		Account:    account("eu@empresa.com", "Empresa", "uuid-empresa"),
+		UserID:     "user-empresa",
+	}
+	if err := store.Save(ctx, ccaccount.Profile{
+		Name: "trabalho", Identity: ccaccount.Describe(workSession), SavedAt: now(),
+	}, workSession); err != nil {
+		t.Fatal(err)
+	}
+
+	// A credencial já é a de trabalho, mas o fakeConfig continua com a
+	// identidade pessoal montada por setup — situação observada no Windows.
+	vault.cred = workSession.Credential
+	st, err := m.State(ctx)
+	if err != nil {
+		t.Fatalf("State: %v", err)
+	}
+	if st.ActiveProfile != "trabalho" {
+		t.Fatalf("perfil ativo = %q", st.ActiveProfile)
+	}
+	stored := store.sessions["trabalho"]
+	if string(stored.Account) != string(workSession.Account) || stored.UserID != "user-empresa" {
+		t.Errorf("identidade boa foi substituída pela antiga: %+v", stored)
+	}
+}
+
+func TestAtivarReverteCredencialQuandoIdentidadeFalha(t *testing.T) {
+	m, vault, config, store := setup(t)
+	ctx := context.Background()
+
+	if _, err := m.Save(ctx, "pessoal"); err != nil {
+		t.Fatalf("Save pessoal: %v", err)
+	}
+	originalCredential := append(json.RawMessage(nil), vault.cred...)
+	originalAccount := append(json.RawMessage(nil), config.account...)
+
+	workSession := ccaccount.Session{
+		Credential: credential("max", now().Add(2*time.Hour), now().AddDate(0, 1, 0)),
+		Account:    account("eu@empresa.com", "Empresa", "uuid-empresa"),
+		UserID:     "user-empresa",
+	}
+	if err := store.Save(ctx, ccaccount.Profile{
+		Name: "trabalho", Identity: ccaccount.Describe(workSession), SavedAt: now(),
+	}, workSession); err != nil {
+		t.Fatal(err)
+	}
+
+	config.setErr = errors.New("disco indisponível")
+	if err := m.Activate(ctx, "trabalho"); err == nil {
+		t.Fatal("Activate devia falhar")
+	}
+	if string(vault.cred) != string(originalCredential) {
+		t.Error("a falha deixou a credencial da conta alvo parcialmente aplicada")
+	}
+	if string(config.account) != string(originalAccount) || config.userID != "user-pessoal" {
+		t.Error("a falha não restaurou a identidade anterior")
+	}
+}
+
+func TestAtivarReverteEscritaIncertaDoCofre(t *testing.T) {
+	m, vault, _, store := setup(t)
+	ctx := context.Background()
+
+	if _, err := m.Save(ctx, "pessoal"); err != nil {
+		t.Fatalf("Save pessoal: %v", err)
+	}
+	original := append(json.RawMessage(nil), vault.cred...)
+	workSession := ccaccount.Session{
+		Credential: credential("max", now().Add(2*time.Hour), now().AddDate(0, 1, 0)),
+		Account:    account("eu@empresa.com", "Empresa", "uuid-empresa"),
+		UserID:     "user-empresa",
+	}
+	if err := store.Save(ctx, ccaccount.Profile{
+		Name: "trabalho", Identity: ccaccount.Describe(workSession), SavedAt: now(),
+	}, workSession); err != nil {
+		t.Fatal(err)
+	}
+
+	// Simula um cofre que efetivou a escrita, mas falhou ao reler para
+	// confirmá-la — o caso mais perigoso do security no macOS.
+	vault.writeErr = errors.New("não foi possível conferir")
+	vault.failAfterWrite = true
+	if err := m.Activate(ctx, "trabalho"); err == nil {
+		t.Fatal("Activate devia falhar")
+	}
+	if string(vault.cred) != string(original) {
+		t.Error("a escrita incerta não foi revertida para a credencial anterior")
+	}
+}
+
 func TestAtivarPerfilInexistente(t *testing.T) {
 	m, _, _, _ := setup(t)
 	if err := m.Activate(context.Background(), "fantasma"); !errors.Is(err, ccaccount.ErrProfileNotFound) {
 		t.Fatalf("esperava ErrProfileNotFound, veio %v", err)
+	}
+}
+
+func TestAlternaTodosOsMetodosDeAutenticacaoDireta(t *testing.T) {
+	m, vault, _, store := setup(t)
+	direct := &fakeDirectAuth{origin: "settings.json"}
+	m.WithDirectAuth(direct)
+	ctx := context.Background()
+
+	if _, err := m.Save(ctx, "login"); err != nil {
+		t.Fatalf("Save login: %v", err)
+	}
+	loginCredential := append(json.RawMessage(nil), vault.cred...)
+
+	tests := []struct {
+		name   string
+		method ccaccount.AuthMethod
+		value  string
+	}{
+		{"oauth-token", ccaccount.AuthOAuthToken, "oauth-segredo"},
+		{"api-key", ccaccount.AuthAPIKey, "api-segredo"},
+		{"bearer", ccaccount.AuthBearerToken, "bearer-segredo"},
+		{"helper", ccaccount.AuthAPIHelper, "gera-chave --perfil trabalho"},
+	}
+	for _, test := range tests {
+		direct.method, direct.value = test.method, test.value
+		profile, err := m.Save(ctx, test.name)
+		if err != nil {
+			t.Fatalf("Save %s: %v", test.name, err)
+		}
+		if profile.Method != test.method {
+			t.Errorf("método do perfil %s = %s", test.name, profile.Method)
+		}
+	}
+
+	for _, test := range tests {
+		if err := m.Activate(ctx, test.name); err != nil {
+			t.Fatalf("Activate %s: %v", test.name, err)
+		}
+		if direct.method != test.method || direct.value != test.value {
+			t.Errorf("%s aplicou (%s, %q)", test.name, direct.method, direct.value)
+		}
+		st, err := m.State(ctx)
+		if err != nil || st.ActiveProfile != test.name || st.Method != test.method {
+			t.Errorf("estado de %s = %+v (%v)", test.name, st, err)
+		}
+	}
+
+	if err := m.Activate(ctx, "login"); err != nil {
+		t.Fatalf("Activate login: %v", err)
+	}
+	if direct.method != ccaccount.AuthClaudeLogin || direct.value != "" {
+		t.Error("voltar ao login não desabilitou as autenticações diretas")
+	}
+	if string(vault.cred) != string(loginCredential) {
+		t.Error("voltar ao login não restaurou a credencial OAuth persistida")
+	}
+	if got := store.sessions["api-key"]; got.AuthValue != "api-segredo" {
+		t.Error("API key não ficou protegida junto da sessão")
+	}
+}
+
+func TestAtivarReverteEscritaIncertaDaAutenticacaoDireta(t *testing.T) {
+	m, _, _, store := setup(t)
+	direct := &fakeDirectAuth{
+		method: ccaccount.AuthAPIKey, value: "api-anterior", origin: "settings.json",
+	}
+	m.WithDirectAuth(direct)
+	ctx := context.Background()
+	if _, err := m.Save(ctx, "api"); err != nil {
+		t.Fatal(err)
+	}
+	bearer := ccaccount.Session{Method: ccaccount.AuthBearerToken, AuthValue: "bearer-novo"}
+	if err := store.Save(ctx, ccaccount.Profile{
+		Name: "bearer", Method: bearer.Method, Identity: ccaccount.Describe(bearer), SavedAt: now(),
+	}, bearer); err != nil {
+		t.Fatal(err)
+	}
+
+	direct.applyErr = errors.New("não foi possível conferir settings.json")
+	direct.failAfterApply = true
+	if err := m.Activate(ctx, "bearer"); err == nil {
+		t.Fatal("Activate devia falhar")
+	}
+	if direct.method != ccaccount.AuthAPIKey || direct.value != "api-anterior" {
+		t.Errorf("autenticação anterior não foi restaurada: (%s, %q)", direct.method, direct.value)
 	}
 }
 

@@ -133,13 +133,19 @@ func (c *ConfigFile) SetAccount(_ context.Context, account json.RawMessage, user
 		doc = map[string]json.RawMessage{}
 	}
 
-	doc[accountKey] = account
+	if len(account) > 0 {
+		doc[accountKey] = account
+	} else {
+		delete(doc, accountKey)
+	}
 	if userID != "" {
 		id, err := json.Marshal(userID)
 		if err != nil {
 			return err
 		}
 		doc[userKey] = id
+	} else {
+		delete(doc, userKey)
 	}
 	for _, key := range accountScopedCaches {
 		delete(doc, key)
@@ -228,5 +234,5 @@ func writeAtomic(path string, data []byte, perm os.FileMode) error {
 	if err := xdg.Adopt(tmpName); err != nil {
 		return err
 	}
-	return os.Rename(tmpName, path)
+	return replaceFile(tmpName, path)
 }
