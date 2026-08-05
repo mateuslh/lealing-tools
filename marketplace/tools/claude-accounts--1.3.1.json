@@ -1,0 +1,56 @@
+{
+  "id": "claude-accounts",
+  "version": "1.3.1",
+  "name": "Contas do Claude Code",
+  "summary": "Guarde várias contas do Claude Code inteiras e alterne explicitamente entre elas.",
+  "detail": "Cada perfil guarda a conta completa — credencial, identidade, cotas e o settings.json inteiro, com endpoint, modelos e variáveis. Histórico, planos e tarefas ficam de fora e continuam de onde pararam.",
+  "category": "ai",
+  "risk": "caution",
+  "glyph": "⇆",
+  "permissions": {
+    "filesystem": {
+      "read": [
+        "~/.claude/.credentials.json",
+        "~/.claude/settings.json",
+        "~/.claude.json"
+      ],
+      "write": [
+        "~/.claude/.credentials.json",
+        "~/.claude/settings.json",
+        "~/.claude.json"
+      ]
+    },
+    "network": false,
+    "subprocess": true
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.1/claude-accounts_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.1/claude-accounts_darwin_amd64.tar.gz",
+      "sha256": "dbd4ffd6156c0c61f8076817730d3b4f72e705369ce9ae8127860b077c04efc9"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.1/claude-accounts_darwin_arm64.tar.gz",
+      "sha256": "30a833cfeb904b008ffbaeb67da5342aac2a4b64fd8c56e3fc79910a097d1d93"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.1/claude-accounts_windows_amd64.zip",
+      "sha256": "85498a7af731862a06996eb07f9e971340d35da260c689e7f682810693cd28f6"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.1/claude-accounts_windows_arm64.zip",
+      "sha256": "103058ea371d4f25b5f04d446b09e27a011941637cae8507b34211d350d869e6"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}

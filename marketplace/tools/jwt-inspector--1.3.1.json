@@ -1,0 +1,48 @@
+{
+  "id": "jwt-inspector",
+  "version": "1.3.1",
+  "name": "Inspetor JWT",
+  "summary": "Decodifique header, claims e validade temporal de um JWT sem enviar o token.",
+  "detail": "Decodifica Base64URL e apresenta os campos do token sem prometer verificação de assinatura.",
+  "category": "dev",
+  "risk": "safe",
+  "glyph": "◈",
+  "permissions": {
+    "filesystem": {
+      "read": [],
+      "write": []
+    },
+    "network": false,
+    "subprocess": false
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.1/jwt-inspector_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.1/jwt-inspector_darwin_amd64.tar.gz",
+      "sha256": "b7edde3ede97c90d7072c927f930ffefd09ce41cfe1acfbbe9cded74b8a6064d"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.1/jwt-inspector_darwin_arm64.tar.gz",
+      "sha256": "0088c1d6c101e08091ff1b2892ef5e0df8f59b8cf2686e8d630545bb69c6866f"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.1/jwt-inspector_windows_amd64.zip",
+      "sha256": "1f6d148b630bd6e0a3b1f8daaca67d4eb99b1dd0c342ad5aa8ce4657df022199"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.1/jwt-inspector_windows_arm64.zip",
+      "sha256": "36c6a0a04b593cff3e31a223f5dea9fa1b4010612b4cb495b0b93049a1aa86fe"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}
