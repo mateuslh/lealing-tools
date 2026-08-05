@@ -1,6 +1,6 @@
 apiVersion: lealing.dev/v1
 id: json-lab
-version: 1.3.0
+version: 1.3.1
 name: Laboratório JSON
 summary: Valide, formate ou compacte JSON com diagnóstico preciso de sintaxe.
 detail: Processa o conteúdo localmente e preserva números sem convertê-los para ponto flutuante.

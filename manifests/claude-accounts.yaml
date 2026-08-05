@@ -1,6 +1,6 @@
 apiVersion: lealing.dev/v1
 id: claude-accounts
-version: 1.3.0
+version: 1.3.1
 name: Contas do Claude Code
 summary: Guarde várias contas do Claude Code inteiras e alterne explicitamente entre elas.
 detail: Cada perfil guarda a conta completa — credencial, identidade, cotas e o settings.json inteiro, com endpoint, modelos e variáveis. Histórico, planos e tarefas ficam de fora e continuam de onde pararam.
