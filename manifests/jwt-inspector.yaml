@@ -1,6 +1,6 @@
 apiVersion: lealing.dev/v1
 id: jwt-inspector
-version: 1.3.1
+version: 1.3.3
 name: Inspetor JWT
 summary: Decodifique header, claims e validade temporal de um JWT sem enviar o token.
 detail: Decodifica Base64URL e apresenta os campos do token sem prometer verificação de assinatura.
