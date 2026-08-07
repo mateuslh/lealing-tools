@@ -1,0 +1,53 @@
+{
+  "id": "token-usage",
+  "version": "1.3.3",
+  "name": "Uso de Tokens",
+  "summary": "Consumo de tokens e custo estimado, somando todas as sessões, por modelo, dia e projeto.",
+  "detail": "Varre os logs do Claude Code e do Codex, normaliza o consumo relatado por cada CLI, consulta cotas quando há credenciais e estima o custo pela tabela de preços.",
+  "category": "ai",
+  "risk": "safe",
+  "glyph": "◔",
+  "permissions": {
+    "filesystem": {
+      "read": [
+        "~/.claude/projects",
+        "~/.claude/.credentials.json",
+        "~/.codex/sessions",
+        "~/.codex/auth.json"
+      ],
+      "write": []
+    },
+    "network": true,
+    "subprocess": true
+  },
+  "publisher": "mateuslh",
+  "manifestUrl": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.3/token-usage_manifest.yaml",
+  "artifacts": [
+    {
+      "platform": "darwin-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.3/token-usage_darwin_amd64.tar.gz",
+      "sha256": "4aaa4609e240f8d29783b1b2463c6a59229a1c0b74cce650b6da337b53e764db"
+    },
+    {
+      "platform": "darwin-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.3/token-usage_darwin_arm64.tar.gz",
+      "sha256": "8d758d2f9489169e38d8469a89731c4d59ec4349869d7b421d753685a0d12cda"
+    },
+    {
+      "platform": "windows-amd64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.3/token-usage_windows_amd64.zip",
+      "sha256": "c792d3583949d1f1d39db0e1af6af296d99d5f9d86c57e96eb1ec3d84cd3de68"
+    },
+    {
+      "platform": "windows-arm64",
+      "url": "https://github.com/mateuslh/lealing-tools/releases/download/v1.3.3/token-usage_windows_arm64.zip",
+      "sha256": "1e3f3e624cb049be4fe08a952c5209c1444c04eb05c81f883c2253945f16b7e6"
+    }
+  ],
+  "protocol": {
+    "max": 1,
+    "min": 1
+  },
+  "minimumEngine": "0.3.1",
+  "channel": "official"
+}
