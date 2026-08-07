@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 	"unicode"
@@ -620,11 +621,53 @@ func sameAuth(a, b Session) bool {
 // installedAs confere a sessão relida contra o perfil que acabou de ser
 // aplicado. Um perfil sem snapshot de settings não promete nada sobre o
 // arquivo — cobrar dele o que não guardou reprovaria uma troca correta.
+//
+// O settings é conferido por continência, não byte a byte: restaurar o
+// snapshot reescreve o arquivo pelo encoder da plataforma, que reordena as
+// chaves do mapa e ainda pode neutralizar com valor vazio uma autenticação
+// que só o shell exportava. Exigir bytes idênticos reprovava uma troca
+// correta só porque o arquivo relido tinha as mesmas chaves em outra ordem.
 func installedAs(want, got Session) bool {
 	if !sameAuth(want, got) || !sameJSON(want.Account, got.Account) || want.UserID != got.UserID {
 		return false
 	}
-	return len(want.Settings) == 0 || sameJSON(want.Settings, got.Settings)
+	return len(want.Settings) == 0 || jsonContains(want.Settings, got.Settings)
+}
+
+// jsonContains informa se tudo o que "want" declara reaparece em "got",
+// ignorando a ordem das chaves e tolerando chaves a mais em "got". É a
+// conferência certa para o settings restaurado: o perfil promete o que
+// guardou, não que o arquivo seja idêntico byte a byte depois de reescrito.
+func jsonContains(want, got json.RawMessage) bool {
+	if len(want) == 0 {
+		return true
+	}
+	var wantValue, gotValue any
+	if json.Unmarshal(want, &wantValue) != nil || json.Unmarshal(got, &gotValue) != nil {
+		return sameJSON(want, got)
+	}
+	return valueContains(wantValue, gotValue)
+}
+
+// valueContains é a continência recursiva: mapas exigem cada chave de "want"
+// presente e contida em "got"; listas e escalares exigem igualdade.
+func valueContains(want, got any) bool {
+	switch wantTyped := want.(type) {
+	case map[string]any:
+		gotMap, ok := got.(map[string]any)
+		if !ok {
+			return false
+		}
+		for key, wantField := range wantTyped {
+			gotField, ok := gotMap[key]
+			if !ok || !valueContains(wantField, gotField) {
+				return false
+			}
+		}
+		return true
+	default:
+		return reflect.DeepEqual(want, got)
+	}
 }
 
 func sameJSON(a, b json.RawMessage) bool {
